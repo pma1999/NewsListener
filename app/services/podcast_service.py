@@ -11,6 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from openai import AsyncOpenAI, APIError
 from pydub import AudioSegment
+from langsmith.wrappers import wrap_openai # Added for LangSmith tracing
 
 from app.core.config import settings
 from app.models.news_models import NewsDigest, PodcastEpisode, NewsDigestStatus
@@ -156,6 +157,19 @@ async def generate_podcast_audio_for_digest(
         return None, "OpenAI API key configuration error."
 
     async_openai_client = AsyncOpenAI(api_key=api_key)
+    # Wrap the OpenAI client for LangSmith tracing if tracing is enabled
+    if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true" or os.getenv("LANGSMITH_TRACING", "false").lower() == "true":
+        logger.info("LangSmith tracing enabled for OpenAI client in podcast_service.")
+        try:
+            async_openai_client = wrap_openai(async_openai_client)
+            logger.info("AsyncOpenAI client wrapped successfully with LangSmith.")
+        except Exception as e:
+            logger.error(f"Failed to wrap AsyncOpenAI client with LangSmith: {e}", exc_info=True)
+            # Optionally, decide if you want to proceed without tracing or raise an error
+            # For now, we'll log and proceed with the unwrapped client if wrapping fails.
+    else:
+        logger.info("LangSmith tracing not enabled for OpenAI client in podcast_service.")
+
     tts_model = settings.OPENAI_TTS_MODEL
     tts_voice = settings.OPENAI_TTS_VOICE
 

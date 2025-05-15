@@ -1,4 +1,5 @@
 import logging
+import os # Added for LangSmith environment variable setup
 from fastapi import FastAPI, Request, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -30,6 +31,33 @@ app = FastAPI(
 @app.on_event("startup")
 def on_startup():
     logger.info("Starting up NewsListener application...")
+
+    # Set LangSmith environment variables for tracing
+    # This ensures LangSmith is configured for any LangChain/OpenAI calls
+    logger.info("Configuring LangSmith tracing...")
+    if settings.LANGSMITH_TRACING_V2 and settings.LANGSMITH_TRACING_V2.lower() == "true":
+        os.environ["LANGCHAIN_TRACING_V2"] = "true" # LangChain SDK typically uses LANGCHAIN_TRACING_V2
+        os.environ["LANGSMITH_TRACING"] = "true" # Some older examples use this, set both for broader compatibility
+        logger.info("LANGCHAIN_TRACING_V2 / LANGSMITH_TRACING set to true.")
+        if settings.LANGSMITH_API_KEY and settings.LANGSMITH_API_KEY != "YOUR_LANGSMITH_API_KEY_HERE":
+            os.environ["LANGCHAIN_API_KEY"] = settings.LANGSMITH_API_KEY # LangChain SDK uses LANGCHAIN_API_KEY
+            os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
+            logger.info("LangSmith API Key has been set.")
+        else:
+            logger.warning("LangSmith API Key is not set or is using the placeholder. Tracing might not work.")
+        
+        if settings.LANGSMITH_ENDPOINT:
+            os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGSMITH_ENDPOINT # LangChain SDK uses LANGCHAIN_ENDPOINT
+            os.environ["LANGSMITH_ENDPOINT"] = settings.LANGSMITH_ENDPOINT
+            logger.info(f"LangSmith Endpoint set to: {settings.LANGSMITH_ENDPOINT}")
+
+        if settings.LANGSMITH_PROJECT:
+            os.environ["LANGCHAIN_PROJECT"] = settings.LANGSMITH_PROJECT # LangChain SDK uses LANGCHAIN_PROJECT
+            os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
+            logger.info(f"LangSmith Project set to: {settings.LANGSMITH_PROJECT}")
+    else:
+        logger.info("LangSmith tracing is disabled via LANGSMITH_TRACING_V2 setting.")
+
     # Create database tables if they don't exist
     # This is suitable for development; for production, use Alembic migrations.
     try:

@@ -91,7 +91,7 @@ async def get_llm_instance():
             model=settings.GEMINI_MODEL_NAME, 
             google_api_key=settings.GOOGLE_API_KEY, 
             temperature=0.7, # Adjust as needed
-            max_output_tokens=4096 # Adjust as needed, Gemini Pro has larger context
+            max_output_tokens=8192 # Adjust as needed, Gemini Pro has larger context
         )
     except Exception as e:
         logger.error(f"Failed to initialize ChatGoogleGenerativeAI: {e}", exc_info=True)
@@ -127,7 +127,7 @@ async def generate_news_podcast_script(
     llm = await get_llm_instance() # Now gets Gemini
     parser = StrOutputParser()
 
-    MAX_CONTEXT_CHARS = 30000 # Gemini has a larger context window generally
+    MAX_CONTEXT_CHARS = 100000 # Gemini has a larger context window generally
     if len(news_items_content) > MAX_CONTEXT_CHARS:
         logger.warning(f"News content length ({len(news_items_content)}) exceeds limit ({MAX_CONTEXT_CHARS}). Truncating.")
         news_items_content = news_items_content[:MAX_CONTEXT_CHARS] + "... (content truncated)"

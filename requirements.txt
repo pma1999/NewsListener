@@ -10,6 +10,9 @@ langchain-openai # For ChatOpenAI, kept for TTS if needed, or if user wants to s
 langchain-google-genai # For Gemini LLM script generation
 aiohttp # Used by Langchain for async HTTP requests, good to have explicitly
 
+# LangSmith Tracing
+langsmith
+
 # New dependencies for NewsProcessingService
 feedparser
 requests
