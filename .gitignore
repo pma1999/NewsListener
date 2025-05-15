@@ -1,0 +1,139 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a PyInstaller loader hook
+
+#  app.py
+#  *.manifest
+#  *.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+pytestdebug.log
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock
+#   in version control. But in case you prefer not to:
+# Pipfile.lock
+
+# PEP 582; PEP 582 requires the __pypackages__ directory to be ignored by version control systems.
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Desktop.ini
+desktop.ini
+
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+
+# Optional local configurations
+local_settings.py
+local.env
+
+# Direnv
+.direnv/
+
+# FastAPI / Uvicorn temp files (if any)
+# *.db-journal # Already covered by general db.sqlite3-journal
+
+# NewsListener specific
+newslistener.db
+newslistener_fallback.db
+app/static/audio/*.mp3
+!app/static/audio/__init__.py
+!app/static/audio/.gitkeep # If you want to keep the directory in git even if empty initially
+
+# Cursor-specific files
+.cursor/ 

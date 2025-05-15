@@ -1,0 +1,21 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary # Optional: if using PostgreSQL, otherwise remove for SQLite only
+python-dotenv
+openai
+pydub
+langchain
+langchain-openai # For ChatOpenAI, kept for TTS if needed, or if user wants to switch LLM provider easily
+langchain-google-genai # For Gemini LLM script generation
+aiohttp # Used by Langchain for async HTTP requests, good to have explicitly
+
+# New dependencies for NewsProcessingService
+feedparser
+requests
+beautifulsoup4
+
+# For development & testing (optional, can be in a dev-requirements.txt)
+# pytest
+# pytest-asyncio
+httpx # For testing FastAPI endpoints
