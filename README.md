@@ -35,7 +35,7 @@ The core functionality of NewsListener revolves around:
     *   Supports script generation in multiple languages (currently English, Spanish, and French prompts are available).
     *   Customizable script styles (e.g., "standard", "engaging_storyteller", "quick_brief") through detailed LLM prompting.
 *   **High-Quality TTS Audio:**
-    *   Uses OpenAI's TTS models (e.g., `tts-1`) for audio generation.
+    *   Uses OpenAI's TTS models (e.g., `gpt-4o-mini-tts`) for audio generation.
     *   Supports various voices (e.g., "alloy", "nova") and rich instructional prompts for nuanced delivery.
     *   Automatically chunks long scripts for TTS processing and seamlessly concatenates audio segments.
 *   **Robust API:**
@@ -166,7 +166,7 @@ NewsListener/
     # DATABASE_URL="postgresql://user:password@host:port/dbname"
 
     # Optional: TTS settings (defaults are provided in config.py)
-    # OPENAI_TTS_MODEL="tts-1-hd"
+    # OPENAI_TTS_MODEL="gpt-4o-mini-tts-hd"
     # OPENAI_TTS_VOICE="nova"
     # TTS_CHUNK_CHAR_LIMIT=3000
     # TTS_CHUNK_PAUSE_MS=200
@@ -187,7 +187,7 @@ Key environment variables:
 *   `DATABASE_URL`: The connection string for your database.
     *   Default: `sqlite:///./newslistener.db` (creates a SQLite file in the project root).
     *   For PostgreSQL: `postgresql://username:password@host:port/database_name`.
-*   `OPENAI_TTS_MODEL`: OpenAI TTS model to use (default: `tts-1`).
+*   `OPENAI_TTS_MODEL`: OpenAI TTS model to use (default: `gpt-4o-mini-tts`).
 *   `OPENAI_TTS_VOICE`: OpenAI TTS voice (default: `alloy`). Other options include `echo`, `fable`, `onyx`, `nova`, `shimmer`.
 *   `TTS_CHUNK_CHAR_LIMIT`: Character limit for splitting text before sending to TTS (default: `3000`).
 *   `TTS_CHUNK_PAUSE_MS`: Milliseconds of silence to add between concatenated audio chunks (default: `200`).

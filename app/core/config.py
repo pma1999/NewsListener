@@ -20,7 +20,7 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./newslistener.db")
 
     # TTS Settings
-    OPENAI_TTS_MODEL: str = os.getenv("OPENAI_TTS_MODEL", "tts-1")
+    OPENAI_TTS_MODEL: str = os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
     OPENAI_TTS_VOICE: str = os.getenv("OPENAI_TTS_VOICE", "alloy") # Options: alloy, echo, fable, onyx, nova, shimmer
     TTS_CHUNK_CHAR_LIMIT: int = int(os.getenv("TTS_CHUNK_CHAR_LIMIT", 3000))
     TTS_CHUNK_PAUSE_MS: int = int(os.getenv("TTS_CHUNK_PAUSE_MS", 200)) # Milliseconds
