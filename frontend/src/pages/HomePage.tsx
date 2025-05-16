@@ -23,25 +23,6 @@ const HomePage: React.FC = () => {
     <div className="container mx-auto p-4 space-y-12">
       <PodcastGeneratorForm onGenerationStart={handlePodcastGenerationStart} />
       <PodcastStatusSection activeDigestIds={activeDigestIds} />
-      
-      {/* Placeholder for PodcastStatusSection - to be implemented next */}
-      {activeDigestIds.length > 0 && (
-        <div className="mt-12 p-6 bg-gray-800 rounded-xl shadow-xl">
-          <h2 className="text-2xl font-semibold text-center text-purple-400 mb-6">Podcast Statuses</h2>
-          <p className="text-center text-gray-400">
-            Status cards for (IDs: {activeDigestIds.join(', ')}) will appear here once implemented.
-          </p>
-          {/* PodcastStatusSection will map over activeDigestIds and render PodcastStatusCard */}
-        </div>
-      )}
-       {activeDigestIds.length === 0 && (
-        <div className="mt-12 p-6 bg-gray-800 rounded-xl shadow-xl">
-          <h2 className="text-2xl font-semibold text-center text-purple-400 mb-2">Ready to Generate?</h2>
-          <p className="text-center text-gray-400">
-            Fill out the form above to create your first personalized news podcast. Status will appear here.
-          </p>
-        </div>
-      )}
     </div>
   );
 };
