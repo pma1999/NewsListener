@@ -1,8 +1,14 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore'; // Import the auth store
 
+// Log the raw environment variable value from Vite
+console.log('[Debug] VITE_API_BASE_URL from import.meta.env:', import.meta.env.VITE_API_BASE_URL);
+
 // Base URL for the API. Default to local development if not set.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+// Log the final API_BASE_URL being used
+console.log('[Debug] Final API_BASE_URL for Axios:', API_BASE_URL);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
