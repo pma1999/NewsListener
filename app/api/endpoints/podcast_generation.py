@@ -9,6 +9,7 @@ from app.services import news_processing_service, llm_service, podcast_service
 from app.models.news_models import NewsDigest, NewsDigestStatus, PodcastEpisode
 from app.models.user_models import User
 from app.models.preference_models import UserPreference
+from app.models.predefined_category_models import PredefinedCategory as PredefinedCategoryModel
 
 logger = logging.getLogger(__name__)
 
@@ -102,129 +103,182 @@ async def generate_podcast_endpoint(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    logger.info(f"User {current_user.id} requested podcast generation: {request.model_dump(exclude_none=True)}")
+    logger.info(f"User {current_user.id} requested podcast generation with payload: {request.model_dump(exclude_none=True, exclude={'user_openai_api_key', 'user_google_api_key'})}")
 
-    generation_criteria: Dict[str, Any] = {
-        "language": request.language or "en",
-        "audio_style": request.audio_style or "standard",
-    }
+    generation_criteria: Dict[str, Any] = {} 
     source_info_for_digest: Dict[str, Any] = {}
 
-    if request.specific_article_urls:
+    # Mode 1: Specific Article URLs (Highest Priority)
+    if request.specific_article_urls and request.specific_article_urls[0].strip() != "": # Check if not just empty strings
+        logger.info(f"User {current_user.id}: Using 'Specific Article URLs' mode.")
         generation_criteria["source_type"] = "specific_urls"
-        generation_criteria["urls"] = [str(url) for url in request.specific_article_urls]
+        generation_criteria["urls"] = [str(url) for url in request.specific_article_urls if str(url).strip()]
+        
+        if not generation_criteria["urls"]:
+             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Specific article URLs provided but all were empty.")
+
+        generation_criteria["language"] = request.language
+        generation_criteria["audio_style"] = request.audio_style
+
         source_info_for_digest = {
             "source_type": "specific_urls",
-            "urls": [str(url) for url in request.specific_article_urls],
+            "urls": generation_criteria["urls"], # Use cleaned list
             "language": request.language,
             "audio_style": request.audio_style,
         }
+    
+    # Mode 2: Predefined Category
+    elif request.predefined_category_id is not None:
+        category = db.query(PredefinedCategoryModel).filter(
+            PredefinedCategoryModel.id == request.predefined_category_id,
+            PredefinedCategoryModel.is_active == True
+        ).first()
+        if not category:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Predefined category ID {request.predefined_category_id} not found or not active.")
+        
+        logger.info(f"User {current_user.id}: Using 'Predefined Category' mode (ID: {category.id}, Name: '{category.name}').")
+        
+        # Base criteria from category, overridden by request fields.
+        # Language & Audio Style: Request values are final. Frontend should pre-fill from category if user selected one.
+        generation_criteria["language"] = request.language
+        generation_criteria["audio_style"] = request.audio_style
+
+        # List-based criteria:
+        # If request field is explicitly provided (not None), use it (even if empty list, means user cleared it).
+        # Otherwise, use the category's value (or an empty list if category's value is None/empty).
+        generation_criteria["topics"] = request.request_topics if request.request_topics is not None else (category.topics or [])
+        generation_criteria["keywords"] = request.request_keywords if request.request_keywords is not None else (category.keywords or [])
+        # Ensure HttpUrl objects are converted to strings for RSS URLs from category
+        category_rss_urls = [str(url_obj) for url_obj in category.rss_urls] if category.rss_urls else []
+        generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls] if request.request_rss_urls is not None else category_rss_urls
+        
+        generation_criteria["exclude_keywords"] = request.request_exclude_keywords if request.request_exclude_keywords is not None else (category.exclude_keywords or [])
+        generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains if request.request_exclude_source_domains is not None else (category.exclude_source_domains or [])
+        
+        generation_criteria["source_type"] = "predefined_category_resolved" 
+
+        source_info_for_digest = {
+            "source_type": "predefined_category_resolved",
+            "predefined_category_id": category.id,
+            "language": generation_criteria["language"],
+            "audio_style": generation_criteria["audio_style"],
+            "topics": generation_criteria["topics"],
+            "keywords": generation_criteria["keywords"],
+            "rss_urls": generation_criteria["rss_urls"],
+            "exclude_keywords": generation_criteria["exclude_keywords"],
+            "exclude_source_domains": generation_criteria["exclude_source_domains"],
+        }
+
+    # Mode 3: User Default Preferences
     elif request.use_user_default_preferences:
+        logger.info(f"User {current_user.id}: Using 'User Default Preferences' mode.")
         user_prefs = db.query(UserPreference).filter(UserPreference.user_id == current_user.id).first()
         if not user_prefs:
-            logger.info(f"User {current_user.id} has no preferences set up. Creating default preferences for this request.")
-            user_prefs = UserPreference(user_id=current_user.id)
-            db.add(user_prefs)
-            db.flush()
+            logger.info(f"User {current_user.id} has no preferences set up. Using request values or app defaults for this request.")
+            # This mimics ad-hoc if prefs are missing, but with use_user_default_preferences=true.
+            # The 'applied_criteria' in source_info_for_digest will reflect this lack of stored prefs.
+            generation_criteria["source_type"] = "user_preferences" # Still mark as preference-based attempt
+            generation_criteria["user_preference_id"] = None # No actual preference ID
+            
+            generation_criteria["language"] = request.language # Must be provided by request
+            generation_criteria["audio_style"] = request.audio_style # Must be provided by request
+            generation_criteria["topics"] = request.request_topics or []
+            generation_criteria["keywords"] = request.request_keywords or []
+            generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls or []]
+            generation_criteria["exclude_keywords"] = request.request_exclude_keywords or [] # Overrides for non-existent prefs still apply as direct input
+            generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains or []
+            
             source_info_for_digest = {
                 "source_type": "user_preferences",
-                "user_preference_id": user_prefs.id,
-                "applied_criteria": { 
-                    "topics": request.request_topics if request.request_topics is not None else user_prefs.preferred_topics,
-                    "keywords": request.request_keywords if request.request_keywords is not None else user_prefs.custom_keywords,
-                    "rss_urls": [str(url) for url in request.request_rss_urls or []],
-                    "language": request.language or user_prefs.default_language or "en",
-                    "audio_style": request.audio_style or user_prefs.default_audio_style or "standard",
+                "user_preference_id": None, # Indicate no prefs found
+                "applied_criteria": {
+                    "language": generation_criteria["language"],
+                    "audio_style": generation_criteria["audio_style"],
+                    "topics": generation_criteria["topics"],
+                    "keywords": generation_criteria["keywords"],
+                    "rss_urls": generation_criteria["rss_urls"],
+                    "exclude_keywords": generation_criteria["exclude_keywords"],
+                    "exclude_source_domains": generation_criteria["exclude_source_domains"],
                 }
             }
-        else:
+        else: # User has preferences
             generation_criteria["source_type"] = "user_preferences"
             generation_criteria["user_preference_id"] = user_prefs.id
 
-            # Topics: Use request_topics if provided, otherwise use user_prefs.preferred_topics
-            if request.request_topics is not None:
-                generation_criteria["topics"] = request.request_topics
-            elif user_prefs.preferred_topics:
-                generation_criteria["topics"] = user_prefs.preferred_topics
-            else:
-                generation_criteria["topics"] = []
-
-            # Keywords: Use request_keywords if provided, otherwise use user_prefs.custom_keywords
-            if request.request_keywords is not None:
-                generation_criteria["keywords"] = request.request_keywords
-            elif user_prefs.custom_keywords:
-                generation_criteria["keywords"] = user_prefs.custom_keywords
-            else:
-                generation_criteria["keywords"] = []
-
-            # RSS URLs: Use request_rss_urls if provided, otherwise use user_prefs.include_source_rss_urls
-            # This changes from merging to replacing if request_rss_urls is present.
-            if request.request_rss_urls is not None:
-                generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls]
-            elif user_prefs.include_source_rss_urls:
-                generation_criteria["rss_urls"] = [str(url) for url in user_prefs.include_source_rss_urls]
-            else:
-                generation_criteria["rss_urls"] = []
-
-            # Language & Audio Style (existing logic is fine: request > preference > default)
+            # Language & Audio Style: Request overrides preference, which overrides app default "en"/"standard"
             generation_criteria["language"] = request.language or user_prefs.default_language or "en"
             generation_criteria["audio_style"] = request.audio_style or user_prefs.default_audio_style or "standard"
 
-            # Exclude Keywords: Use request_exclude_keywords if provided, otherwise use user_prefs.exclude_keywords
-            if request.request_exclude_keywords is not None:
-                generation_criteria["exclude_keywords"] = request.request_exclude_keywords
-            elif user_prefs.exclude_keywords:
-                generation_criteria["exclude_keywords"] = user_prefs.exclude_keywords
-            else:
-                generation_criteria["exclude_keywords"] = []
+            # List-based criteria: Request value (if not None) is an override. Otherwise, use preference.
+            generation_criteria["topics"] = request.request_topics if request.request_topics is not None else (user_prefs.preferred_topics or [])
+            generation_criteria["keywords"] = request.request_keywords if request.request_keywords is not None else (user_prefs.custom_keywords or [])
+            
+            pref_rss_urls = [str(url_obj) for url_obj in user_prefs.include_source_rss_urls] if user_prefs.include_source_rss_urls else []
+            generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls] if request.request_rss_urls is not None else pref_rss_urls
 
-            # Exclude Source Domains: Use request_exclude_source_domains if provided, otherwise use user_prefs.exclude_source_domains
-            if request.request_exclude_source_domains is not None:
-                generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains
-            elif user_prefs.exclude_source_domains:
-                generation_criteria["exclude_source_domains"] = user_prefs.exclude_source_domains
-            else:
-                generation_criteria["exclude_source_domains"] = []
-                
+            generation_criteria["exclude_keywords"] = request.request_exclude_keywords if request.request_exclude_keywords is not None else (user_prefs.exclude_keywords or [])
+            generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains if request.request_exclude_source_domains is not None else (user_prefs.exclude_source_domains or [])
+            
             source_info_for_digest = {
                 "source_type": "user_preferences",
                 "user_preference_id": user_prefs.id,
-                "applied_criteria": { 
-                    "topics": generation_criteria.get("topics"),
-                    "keywords": generation_criteria.get("keywords"),
-                    "rss_urls": generation_criteria.get("rss_urls"),
+                "applied_criteria": { # Store the effectively applied criteria
                     "language": generation_criteria["language"],
                     "audio_style": generation_criteria["audio_style"],
+                    "topics": generation_criteria["topics"],
+                    "keywords": generation_criteria["keywords"],
+                    "rss_urls": generation_criteria["rss_urls"],
+                    "exclude_keywords": generation_criteria["exclude_keywords"],
+                    "exclude_source_domains": generation_criteria["exclude_source_domains"],
                 }
             }
+    
+    # Mode 4: Ad-hoc Criteria (no URLs, no category, use_user_default_preferences is false)
     else:
+        logger.info(f"User {current_user.id}: Using 'Ad-hoc Criteria' mode.")
         generation_criteria["source_type"] = "direct_input"
-        generation_criteria["topics"] = request.request_topics
-        generation_criteria["keywords"] = request.request_keywords
+        
+        generation_criteria["language"] = request.language # Must be provided
+        generation_criteria["audio_style"] = request.audio_style # Must be provided
+        generation_criteria["topics"] = request.request_topics or []
+        generation_criteria["keywords"] = request.request_keywords or []
         generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls or []]
+        
+        # Exclusions are overrides to preferences. If not using prefs (pure ad-hoc), they are not applicable as overrides.
+        # The news_processing_service might still accept them as direct filters if its API allows.
+        # For now, let's send them if provided, news_processing_service can decide.
+        generation_criteria["exclude_keywords"] = request.request_exclude_keywords or []
+        generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains or []
+
         source_info_for_digest = {
             "source_type": "direct_input",
-            "criteria": {
-                "topics": request.request_topics,
-                "keywords": request.request_keywords,
-                "rss_urls": [str(url) for url in request.request_rss_urls or []],
-                "language": request.language,
-                "audio_style": request.audio_style,
-            }
+            "language": request.language,
+            "audio_style": request.audio_style,
+            "topics": generation_criteria["topics"],
+            "keywords": generation_criteria["keywords"],
+            "rss_urls": generation_criteria["rss_urls"],
+            "exclude_keywords": generation_criteria["exclude_keywords"],
+            "exclude_source_domains": generation_criteria["exclude_source_domains"],
         }
 
-    # Ensure language and audio_style are finalized in generation_criteria for cache lookup
-    if "language" not in generation_criteria or not generation_criteria["language"]:
-        generation_criteria["language"] = request.language or "en"
-    if "audio_style" not in generation_criteria or not generation_criteria["audio_style"]:
-        generation_criteria["audio_style"] = request.audio_style or "standard"
+    # Final check and fallback for language/audio_style in generation_criteria
+    # This should ideally be redundant if all modes above correctly set these.
+    if not generation_criteria.get("language"):
+        logger.warning("Language not set in generation_criteria, falling back to 'en'. This indicates a potential logic gap.")
+        generation_criteria["language"] = "en"
+    if not generation_criteria.get("audio_style"):
+        logger.warning("Audio style not set in generation_criteria, falling back to 'standard'. This indicates a potential logic gap.")
+        generation_criteria["audio_style"] = "standard"
     
     effective_language = generation_criteria["language"]
     effective_audio_style = generation_criteria["audio_style"]
 
+    logger.info(f"User {current_user.id}: Final generation criteria for NewsProcessingService: {generation_criteria}")
+    logger.info(f"User {current_user.id}: Final source_info_for_digest for caching: {source_info_for_digest}")
+
     # --- Cache Check Logic ---
     if not request.force_regenerate:
-        logger.info(f"User {current_user.id}: Checking cache for podcast. Criteria: lang={effective_language}, style={effective_audio_style}, source_info_keys={list(source_info_for_digest.keys()) if source_info_for_digest else 'N/A'}")
+        logger.info(f"User {current_user.id}: Checking cache for podcast. Effective lang={effective_language}, style={effective_audio_style}, source_info_keys={list(source_info_for_digest.keys()) if source_info_for_digest else 'N/A'}")
         
         cached_digest = db.query(NewsDigest) \
             .join(NewsDigest.podcast_episode) \
@@ -243,7 +297,7 @@ async def generate_podcast_endpoint(
             logger.info(f"User {current_user.id}: Cache hit. Reusing NewsDigest ID {cached_digest.id} (Episode ID {cached_digest.podcast_episode.id})")
             return podcast_schemas.PodcastGenerationResponse(
                 news_digest_id=cached_digest.id,
-                initial_status=cached_digest.status, # This will be NewsDigestStatus.COMPLETED
+                initial_status=str(cached_digest.status.value), # Ensure enum is stringified
                 message="Podcast retrieved from cache. Audio is available."
             )
         else:
@@ -254,7 +308,7 @@ async def generate_podcast_endpoint(
 
     news_digest = NewsDigest(
         user_id=current_user.id,
-        original_articles_info=source_info_for_digest,
+        original_articles_info=source_info_for_digest, # This is crucial for caching
         status=NewsDigestStatus.PENDING_SCRIPT
     )
     db.add(news_digest)
@@ -267,7 +321,7 @@ async def generate_podcast_endpoint(
         db=db,
         news_digest_id=news_digest.id,
         user_id=current_user.id,
-        generation_criteria=generation_criteria,
+        generation_criteria=generation_criteria, # Pass the fully resolved criteria
         force_regenerate=request.force_regenerate,
         user_openai_api_key=request.user_openai_api_key,
         user_google_api_key=request.user_google_api_key
@@ -275,8 +329,8 @@ async def generate_podcast_endpoint(
 
     return podcast_schemas.PodcastGenerationResponse(
         news_digest_id=news_digest.id,
-        initial_status=news_digest.status,
-        message="Podcast generation process with custom preferences started."
+        initial_status=str(news_digest.status.value), # Ensure enum is stringified
+        message="Podcast generation process started." # Updated message for clarity
     )
 
 @router.get("/podcast-status/{news_digest_id}", response_model=podcast_schemas.PodcastEpisodeStatusResponse)
@@ -301,11 +355,13 @@ async def get_podcast_status_endpoint(
         audio_url = news_digest.podcast_episode.audio_url
     
     if news_digest.generated_script_text:
-        script_preview = news_digest.generated_script_text[:200] + "..."
+        # Truncate script preview if it's very long
+        preview_limit = 250 
+        script_preview = (news_digest.generated_script_text[:preview_limit] + "...") if len(news_digest.generated_script_text) > preview_limit else news_digest.generated_script_text
 
     return podcast_schemas.PodcastEpisodeStatusResponse(
         news_digest_id=news_digest.id,
-        status=news_digest.status,
+        status=str(news_digest.status.value), # Explicitly convert enum to string value
         audio_url=audio_url,
         script_preview=script_preview,
         error_message=news_digest.error_message,

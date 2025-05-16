@@ -24,8 +24,6 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def create_db_and_tables():
-    # Ensure all models are imported somewhere before this function is called
-    # so that Base.metadata contains all the table definitions.
-    # For example, in main.py or by importing the model modules themselves here (conditionally or carefully).
-    # However, the primary fix is to remove model imports from the top of *this* file.
+    # Base.metadata is populated when model modules (which import Base from here)
+    # are imported, typically in app/main.py before this function is called.
     Base.metadata.create_all(bind=engine) 

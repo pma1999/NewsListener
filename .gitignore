@@ -134,6 +134,7 @@ frontend/node_modules/
 # NewsListener specific
 newslistener.db
 newslistener_fallback.db
+*.db
 app/static/audio/*.mp3
 !app/static/audio/__init__.py
 !app/static/audio/.gitkeep # If you want to keep the directory in git even if empty initially

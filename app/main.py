@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.api.endpoints import podcast_generation
 from app.api.endpoints import preferences as preferences_router
 from app.api.endpoints import auth as auth_router # New auth router
+from app.api.endpoints import predefined_categories as predefined_categories_router # New router
 from app.db.database import create_db_and_tables, SessionLocal # SessionLocal might be needed if we add logic
 
 # Ensure all model modules are imported before create_db_and_tables is called
@@ -18,6 +19,7 @@ from app.db.database import create_db_and_tables, SessionLocal # SessionLocal mi
 from app.models import user_models # noqa
 from app.models import news_models # noqa
 from app.models import preference_models # noqa
+from app.models import predefined_category_models # noqa New model import
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -79,6 +81,7 @@ def on_startup():
     # Create database tables if they don't exist
     # This is suitable for development; for production, use Alembic migrations.
     try:
+        # Models are imported above, so Base.metadata should be populated.
         create_db_and_tables()
         logger.info("Database tables checked/created.")
         
@@ -155,6 +158,7 @@ except RuntimeError as e:
 app.include_router(auth_router.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(podcast_generation.router, prefix=f"{settings.API_V1_STR}/podcasts", tags=["Podcasts"])
 app.include_router(preferences_router.router, prefix=f"{settings.API_V1_STR}/user/preferences", tags=["User Preferences"])
+app.include_router(predefined_categories_router.router, prefix=f"{settings.API_V1_STR}/predefined-categories", tags=["Predefined Categories"])
 
 # --- Root Endpoint --- #
 @app.get(f"{settings.API_V1_STR}/health", tags=["Health"])

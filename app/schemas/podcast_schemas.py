@@ -3,9 +3,10 @@ from typing import List, Optional, Dict, Any
 from app.models.news_models import NewsDigestStatus # For status enum
 
 class PodcastGenerationRequest(BaseModel):
+    predefined_category_id: Optional[int] = Field(None, title="Predefined Category ID", description="ID of a predefined category to use as a base. If provided, 'use_user_default_preferences' is ignored for sourcing base criteria, and specific request_* fields act as overrides to the category's settings.")
     specific_article_urls: Optional[List[HttpUrl]] = Field(None, title="Specific Article URLs", description="List of specific article URLs to generate podcast from. Overrides other preferences if provided.")
 
-    use_user_default_preferences: bool = Field(True, title="Use Stored Preferences", description="If true (and specific_article_urls is not provided), use the authenticated user's stored preferences.")
+    use_user_default_preferences: bool = Field(True, title="Use Stored Preferences", description="If true (and specific_article_urls and predefined_category_id are not provided), use the authenticated user's stored preferences.")
 
     # Overrides for user's stored preferences OR direct input if use_user_default_preferences = False
     request_topics: Optional[List[str]] = Field(None, title="Request Topics", description="Topics for this specific request.")

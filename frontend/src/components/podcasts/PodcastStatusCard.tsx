@@ -10,7 +10,6 @@ import { config } from '../../config'; // Import config
 interface PodcastStatusCardProps {
   newsDigestId: number;
   initialStatus?: string;    // New prop
-  initialMessage?: string;   // New prop
   isCached?: boolean;        // New prop
 }
 
@@ -19,7 +18,6 @@ const POLLING_INTERVAL_MS = 5000; // 5 seconds
 const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({ 
   newsDigestId, 
   initialStatus,
-  initialMessage, // unused for now, but available if needed for more complex logic
   isCached 
 }) => {
   const { // Note: data is renamed to statusDataFromHook to avoid conflict with statusData used below
@@ -107,7 +105,7 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
     const backendRootUrl = config.apiBaseUrl.replace('/api/v1', '');
     const fullAudioUrl = audio_url ? `${backendRootUrl}${audio_url}` : undefined;
 
-    let statusIcon, statusColor, statusText, statusNote = null;
+    let statusIcon, statusColor, statusText;
     
     // If it's cached and completed, show specific cached message initially
     if (isCached && status === NewsDigestStatus.COMPLETED) {
