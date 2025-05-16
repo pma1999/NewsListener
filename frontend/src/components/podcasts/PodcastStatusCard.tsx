@@ -10,6 +10,7 @@ import { config } from '../../config'; // Import config
 interface PodcastStatusCardProps {
   newsDigestId: number;
   initialStatus?: string;    // New prop
+  initialMessage?: string;   // Added new prop
   isCached?: boolean;        // New prop
 }
 
@@ -18,6 +19,7 @@ const POLLING_INTERVAL_MS = 5000; // 5 seconds
 const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({ 
   newsDigestId, 
   initialStatus,
+  initialMessage, // Destructure new prop
   isCached 
 }) => {
   const { // Note: data is renamed to statusDataFromHook to avoid conflict with statusData used below
@@ -64,7 +66,13 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
 
   // Decide whether to use hook data or initial prop data for the first render of cached items
   const statusData = isCached && initialStatus && !statusDataFromHook 
-                     ? { news_digest_id: newsDigestId, status: initialStatus as NewsDigestStatus, updated_at: new Date().toISOString(), created_at: new Date().toISOString() } as PodcastEpisodeStatusResponse 
+                     ? { 
+                         news_digest_id: newsDigestId, 
+                         status: initialStatus as NewsDigestStatus, 
+                         script_preview: initialMessage, // Use initialMessage for script_preview if cached and no hook data yet
+                         updated_at: new Date().toISOString(), 
+                         created_at: new Date().toISOString() 
+                       } as PodcastEpisodeStatusResponse 
                      : statusDataFromHook;
   const isLoading = isCached && initialStatus && !statusDataFromHook ? false : isLoadingHook;
   const isError = isCached && initialStatus && !statusDataFromHook ? false : isErrorHook;
@@ -75,7 +83,7 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
       return (
         <div className="flex items-center justify-center text-gray-400 p-4">
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          <span className="text-sm sm:text-base">Loading status... (ID: {newsDigestId})</span>
+          <span className="text-sm sm:text-base">{initialMessage || `Loading status... (ID: ${newsDigestId})`}</span>
         </div>
       );
     }
@@ -162,7 +170,9 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
         {script_preview && (
           <div className="mb-2 p-2 bg-gray-700/50 rounded-md">
             <p className="text-xs sm:text-sm text-gray-400 font-medium mb-1 flex items-center"><FileText size={14} className="mr-1.5 flex-shrink-0" /> Script Preview:</p>
-            <p className="text-xs sm:text-sm text-gray-300 italic truncate">{script_preview}</p>
+            <p className="text-xs sm:text-sm text-gray-300 italic truncate">
+              {(isCached && statusData?.script_preview === initialMessage && initialMessage) || script_preview}
+            </p>
           </div>
         )}
 

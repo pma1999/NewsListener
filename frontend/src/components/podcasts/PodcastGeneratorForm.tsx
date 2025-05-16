@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatePodcast } from '../../services/podcastService.js';
 import { fetchPredefinedCategories } from '../../services/categoryService';
 import type { PodcastGenerationRequest, PodcastGenerationResponse, UserPreference, PredefinedCategory } from '../../types/api';
@@ -34,7 +34,6 @@ interface PodcastGeneratorFormProps {
 }
 
 const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGenerationStart }) => {
-  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<PodcastGenerationRequest>>({
     use_user_default_preferences: true,
     language: 'en',
