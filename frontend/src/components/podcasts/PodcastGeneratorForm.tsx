@@ -7,7 +7,8 @@ import { Button } from '../common/Button.js';
 import { Input } from '../common/Input.js';
 import { Select } from '../common/Select.js';
 import { Checkbox } from '../common/Checkbox.js';
-import { Loader2, AlertCircle, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff, Newspaper } from 'lucide-react';
+import Tooltip from '../common/Tooltip';
+import { Loader2, AlertCircle, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff, Newspaper, Info } from 'lucide-react';
 import { fetchUserPreferences } from '../../services/preferenceService';
 
 // Define language and audio style options (can be moved to a shared config if used elsewhere)
@@ -238,7 +239,7 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
           <Button 
             variant="icon" 
             onClick={() => removeListItem(fieldKey, index)} 
-            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2 disabled:opacity-50 self-end sm:self-center flex-shrink-0"
+            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2.5 disabled:opacity-50 self-end sm:self-center flex-shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
             aria-label={`Remove ${label.slice(0,-1)}`}
             disabled={isEffectivelyDisabled}
           >
@@ -265,6 +266,19 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
     if (isCategoryMode) return 'Override Selected News Profile Criteria:';
     if (isPreferenceMode) return 'Override My Stored Preferences:';
     return 'Ad-hoc Criteria For This Podcast:';
+  };
+
+  const getCriteriaTooltipText = () => {
+    if (currentIsUrlMode) {
+        return "When using specific article URLs, the criteria section below is disabled and not applicable.";
+    }
+    if (isCategoryMode) {
+        return "These fields act as overrides to the selected News Profile. Leave a field blank to use the profile's default for that field. Fill it to provide a specific value for this podcast generation only.";
+    }
+    if (isPreferenceMode) {
+        return "These fields act as overrides to your stored User Preferences. Leave a field blank to use your stored preference for that field. Fill it to provide a specific value for this podcast generation only.";
+    }
+    return "Define all criteria for this ad-hoc podcast. These settings will be used only for this generation. Exclusion fields are not typically used in pure ad-hoc mode unless your backend specifically supports them without base preferences.";
   };
 
   return (
@@ -344,8 +358,12 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
 
       {(!currentIsUrlMode) && (
         <div className={`p-3 sm:p-4 border border-gray-700 rounded-lg space-y-4 ${(isPreferenceMode || isCategoryMode) ? 'opacity-80' : ''}`}>
-          <h3 className="text-base sm:text-lg font-semibold text-purple-300 flex items-center">
-            <Newspaper size={20} className="mr-2" /> {getCriteriaSectionTitle()}
+          <h3 className="text-base sm:text-lg font-semibold text-purple-300 flex items-center mb-3">
+            <Newspaper size={20} className="mr-2 flex-shrink-0" /> 
+            <span className="mr-1.5">{getCriteriaSectionTitle()}</span>
+            <Tooltip text={getCriteriaTooltipText()} placement="right" className="max-w-xs">
+              <Info size={18} className="text-gray-400 hover:text-gray-200 cursor-help flex-shrink-0" />
+            </Tooltip>
           </h3>
           {renderListInput('request_topics', 'Topics', 'e.g., AI, Space Exploration', 'text')}
           {renderListInput('request_keywords', 'Keywords', 'e.g., Gemini Pro, SpaceX Starship', 'text')}

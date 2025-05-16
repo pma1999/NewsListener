@@ -5,7 +5,8 @@ import type { UserPreference, UserPreferenceUpdate } from '../../types/api';
 import { Button } from '../common/Button.js';
 import { Input } from '../common/Input.js';
 import { Select } from '../common/Select.js';
-import { Check, AlertCircle, Save, PlusCircle, XCircle, Loader2 } from 'lucide-react';
+import Tooltip from '../common/Tooltip';
+import { Check, AlertCircle, Save, PlusCircle, XCircle, Loader2, Info } from 'lucide-react';
 
 interface PreferencesFormProps {
   initialPreferences: UserPreference;
@@ -120,7 +121,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
           <Button 
             variant="icon" 
             onClick={() => removeListItem(field, index)} 
-            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2 self-end sm:self-center flex-shrink-0"
+            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2.5 self-end sm:self-center flex-shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
             aria-label={`Remove ${label.slice(0,-1)}`}
           >
             <XCircle size={20} />
@@ -136,6 +137,8 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
       </Button>
     </div>
   );
+
+  const preferencesTooltipText = "These settings (topics, keywords, RSS, exclusions) define your default content preferences for podcast generation when you choose 'Use My Stored Preferences' on the generation form. Default language and audio style are also part of these stored preferences. You can always override any of these defaults for a specific podcast generation.";
 
   return (
     <form onSubmit={handleSubmit} className="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl space-y-5 sm:space-y-6">
@@ -175,11 +178,19 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
         </div>
       </div>
 
-      {renderListInput('preferred_topics', 'Preferred Topics', 'e.g., Technology')}
-      {renderListInput('custom_keywords', 'Custom Keywords/Phrases', 'e.g., AI in healthcare')}
-      {renderListInput('include_source_rss_urls', 'Include RSS Feed URLs', 'https://example.com/feed.xml', 'url')}
-      {renderListInput('exclude_keywords', 'Exclude Keywords/Phrases', 'e.g., celebrity gossip')}
-      {renderListInput('exclude_source_domains', 'Exclude Source Domains', 'e.g., tabloid.com')}
+      <div className="pt-3 space-y-1">
+        <h4 className="text-md font-semibold text-purple-300 flex items-center mb-3">
+          Default Content Preferences
+          <Tooltip text={preferencesTooltipText} placement="right" className="max-w-sm">
+            <Info size={18} className="ml-2 text-gray-400 hover:text-gray-200 cursor-help flex-shrink-0" />
+          </Tooltip>
+        </h4>
+        {renderListInput('preferred_topics', 'Preferred Topics', 'e.g., Technology')}
+        {renderListInput('custom_keywords', 'Custom Keywords/Phrases', 'e.g., AI in healthcare')}
+        {renderListInput('include_source_rss_urls', 'Include RSS Feed URLs', 'https://example.com/feed.xml', 'url')}
+        {renderListInput('exclude_keywords', 'Exclude Keywords/Phrases', 'e.g., celebrity gossip')}
+        {renderListInput('exclude_source_domains', 'Exclude Source Domains', 'e.g., tabloid.com')}
+      </div>
 
       <div className="pt-3 sm:pt-4 border-t border-gray-700">
         <Button 

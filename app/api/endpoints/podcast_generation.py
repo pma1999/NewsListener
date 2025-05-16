@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
+from sqlalchemy import cast, TEXT
 from typing import Any, Optional, Dict
 
 from app.api import deps
@@ -138,24 +139,16 @@ async def generate_podcast_endpoint(
         
         logger.info(f"User {current_user.id}: Using 'Predefined Category' mode (ID: {category.id}, Name: '{category.name}').")
         
-        # Base criteria from category, overridden by request fields.
-        # Language & Audio Style: Request values are final. Frontend should pre-fill from category if user selected one.
         generation_criteria["language"] = request.language
         generation_criteria["audio_style"] = request.audio_style
-
-        # List-based criteria:
-        # If request field is explicitly provided (not None), use it (even if empty list, means user cleared it).
-        # Otherwise, use the category's value (or an empty list if category's value is None/empty).
         generation_criteria["topics"] = request.request_topics if request.request_topics is not None else (category.topics or [])
         generation_criteria["keywords"] = request.request_keywords if request.request_keywords is not None else (category.keywords or [])
-        # Ensure HttpUrl objects are converted to strings for RSS URLs from category
         category_rss_urls = [str(url_obj) for url_obj in category.rss_urls] if category.rss_urls else []
         generation_criteria["rss_urls"] = [str(url) for url in request.request_rss_urls] if request.request_rss_urls is not None else category_rss_urls
-        
         generation_criteria["exclude_keywords"] = request.request_exclude_keywords if request.request_exclude_keywords is not None else (category.exclude_keywords or [])
         generation_criteria["exclude_source_domains"] = request.request_exclude_source_domains if request.request_exclude_source_domains is not None else (category.exclude_source_domains or [])
         
-        generation_criteria["source_type"] = "predefined_category_resolved" 
+        generation_criteria["source_type"] = "direct_input" 
 
         source_info_for_digest = {
             "source_type": "predefined_category_resolved",
@@ -284,7 +277,7 @@ async def generate_podcast_endpoint(
             .join(NewsDigest.podcast_episode) \
             .filter(
                 NewsDigest.user_id == current_user.id,
-                NewsDigest.original_articles_info == source_info_for_digest, # Compares JSON content
+                cast(NewsDigest.original_articles_info, TEXT) == str(source_info_for_digest), # Cast DB JSON to TEXT and compare with stringified dict
                 NewsDigest.status == NewsDigestStatus.COMPLETED,
                 PodcastEpisode.language == effective_language,
                 PodcastEpisode.audio_style == effective_audio_style,
@@ -297,7 +290,7 @@ async def generate_podcast_endpoint(
             logger.info(f"User {current_user.id}: Cache hit. Reusing NewsDigest ID {cached_digest.id} (Episode ID {cached_digest.podcast_episode.id})")
             return podcast_schemas.PodcastGenerationResponse(
                 news_digest_id=cached_digest.id,
-                initial_status=str(cached_digest.status.value), # Ensure enum is stringified
+                initial_status=str(cached_digest.status), # status is already a string
                 message="Podcast retrieved from cache. Audio is available."
             )
         else:
@@ -329,7 +322,7 @@ async def generate_podcast_endpoint(
 
     return podcast_schemas.PodcastGenerationResponse(
         news_digest_id=news_digest.id,
-        initial_status=str(news_digest.status.value), # Ensure enum is stringified
+        initial_status=str(news_digest.status), # status is already a string
         message="Podcast generation process started." # Updated message for clarity
     )
 
@@ -361,7 +354,7 @@ async def get_podcast_status_endpoint(
 
     return podcast_schemas.PodcastEpisodeStatusResponse(
         news_digest_id=news_digest.id,
-        status=str(news_digest.status.value), # Explicitly convert enum to string value
+        status=str(news_digest.status), # status is already a string
         audio_url=audio_url,
         script_preview=script_preview,
         error_message=news_digest.error_message,
