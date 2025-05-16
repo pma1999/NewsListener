@@ -2,27 +2,57 @@ import React, { useState } from 'react';
 import PodcastGeneratorForm from '../components/podcasts/PodcastGeneratorForm';
 import PodcastStatusSection from '../components/podcasts/PodcastStatusSection'; // Import the actual component
 
-const HomePage: React.FC = () => {
-  // Basic state to track IDs of podcasts being generated or recently completed.
-  // This would be more robust in a real app (e.g., Zustand store, or more complex local state)
-  const [activeDigestIds, setActiveDigestIds] = useState<number[]>([]);
+// Define a new interface for more detailed podcast information
+export interface ActivePodcastInfo {
+  id: number;
+  initialStatus: string;
+  initialMessage: string;
+  isCached: boolean;
+}
 
-  const handlePodcastGenerationStart = (newsDigestId: number) => {
-    setActiveDigestIds(prevIds => {
-      if (!prevIds.includes(newsDigestId)) {
-        // Add to the beginning of the list to show newest first
-        return [newsDigestId, ...prevIds].slice(0, 6); // Keep max 6 active cards for UI neatness
+const HomePage: React.FC = () => {
+  // Update state to hold an array of ActivePodcastInfo objects
+  const [activePodcasts, setActivePodcasts] = useState<ActivePodcastInfo[]>([]);
+
+  const handlePodcastGenerationStart = (
+    newsDigestId: number,
+    initialStatus: string,
+    message: string
+  ) => {
+    const isCached = message.toLowerCase().includes("cache"); // Check if the message indicates a cached response
+    
+    setActivePodcasts(prevPodcasts => {
+      // Check if this ID already exists to prevent duplicates,
+      // though backend cache hit should return existing ID, this is more for UI consistency
+      const existingPodcastIndex = prevPodcasts.findIndex(p => p.id === newsDigestId);
+
+      if (existingPodcastIndex !== -1) {
+        // If it exists, maybe update its status/message if needed, or just ensure it's at the top
+        const updatedPodcasts = [...prevPodcasts];
+        const existingPodcast = updatedPodcasts.splice(existingPodcastIndex, 1)[0];
+        // Update with potentially new cache status/message if backend somehow re-evaluates
+        existingPodcast.isCached = isCached; 
+        existingPodcast.initialMessage = message;
+        existingPodcast.initialStatus = initialStatus;
+        return [existingPodcast, ...updatedPodcasts].slice(0, 6);
+      } else {
+        // Add new podcast to the beginning of the list
+        const newPodcast: ActivePodcastInfo = {
+          id: newsDigestId,
+          initialStatus,
+          initialMessage: message,
+          isCached,
+        };
+        return [newPodcast, ...prevPodcasts].slice(0, 6); // Keep max 6 active cards
       }
-      return prevIds;
     });
-    // In a more complex app, you might want to limit the number of tracked IDs
-    // or remove very old ones.
   };
 
   return (
     <div className="container mx-auto p-4 sm:p-6 md:p-8 space-y-8 sm:space-y-12">
       <PodcastGeneratorForm onGenerationStart={handlePodcastGenerationStart} />
-      <PodcastStatusSection activeDigestIds={activeDigestIds} />
+      {/* Pass the full activePodcasts array to PodcastStatusSection */}
+      <PodcastStatusSection activePodcasts={activePodcasts} />
     </div>
   );
 };

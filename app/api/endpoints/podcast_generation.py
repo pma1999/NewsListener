@@ -105,8 +105,8 @@ async def generate_podcast_endpoint(
     logger.info(f"User {current_user.id} requested podcast generation: {request.model_dump(exclude_none=True)}")
 
     generation_criteria: Dict[str, Any] = {
-        "language": request.language,
-        "audio_style": request.audio_style,
+        "language": request.language or "en",
+        "audio_style": request.audio_style or "standard",
     }
     source_info_for_digest: Dict[str, Any] = {}
 
@@ -213,8 +213,44 @@ async def generate_podcast_endpoint(
             }
         }
 
-    if "language" not in generation_criteria: generation_criteria["language"] = request.language
-    if "audio_style" not in generation_criteria: generation_criteria["audio_style"] = request.audio_style
+    # Ensure language and audio_style are finalized in generation_criteria for cache lookup
+    if "language" not in generation_criteria or not generation_criteria["language"]:
+        generation_criteria["language"] = request.language or "en"
+    if "audio_style" not in generation_criteria or not generation_criteria["audio_style"]:
+        generation_criteria["audio_style"] = request.audio_style or "standard"
+    
+    effective_language = generation_criteria["language"]
+    effective_audio_style = generation_criteria["audio_style"]
+
+    # --- Cache Check Logic ---
+    if not request.force_regenerate:
+        logger.info(f"User {current_user.id}: Checking cache for podcast. Criteria: lang={effective_language}, style={effective_audio_style}, source_info_keys={list(source_info_for_digest.keys()) if source_info_for_digest else 'N/A'}")
+        
+        cached_digest = db.query(NewsDigest) \
+            .join(NewsDigest.podcast_episode) \
+            .filter(
+                NewsDigest.user_id == current_user.id,
+                NewsDigest.original_articles_info == source_info_for_digest, # Compares JSON content
+                NewsDigest.status == NewsDigestStatus.COMPLETED,
+                PodcastEpisode.language == effective_language,
+                PodcastEpisode.audio_style == effective_audio_style,
+                PodcastEpisode.audio_url.isnot(None)
+            ) \
+            .order_by(NewsDigest.created_at.desc()) \
+            .first()
+
+        if cached_digest and cached_digest.podcast_episode:
+            logger.info(f"User {current_user.id}: Cache hit. Reusing NewsDigest ID {cached_digest.id} (Episode ID {cached_digest.podcast_episode.id})")
+            return podcast_schemas.PodcastGenerationResponse(
+                news_digest_id=cached_digest.id,
+                initial_status=cached_digest.status, # This will be NewsDigestStatus.COMPLETED
+                message="Podcast retrieved from cache. Audio is available."
+            )
+        else:
+            logger.info(f"User {current_user.id}: No suitable completed podcast found in cache. Proceeding with new generation.")
+    else:
+        logger.info(f"User {current_user.id}: force_regenerate is True. Skipping cache check.")
+    # --- End Cache Check Logic ---
 
     news_digest = NewsDigest(
         user_id=current_user.id,

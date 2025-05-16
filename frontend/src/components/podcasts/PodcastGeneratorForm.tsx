@@ -30,7 +30,7 @@ const audioStyleOptions = [
 ];
 
 interface PodcastGeneratorFormProps {
-  onGenerationStart: (newsDigestId: number) => void;
+  onGenerationStart: (newsDigestId: number, initialStatus: string, message: string) => void;
 }
 
 const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGenerationStart }) => {
@@ -91,7 +91,7 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
   const mutation = useMutation<PodcastGenerationResponse, Error, PodcastGenerationRequest>({
     mutationFn: generatePodcast,
     onSuccess: (data) => {
-      onGenerationStart(data.news_digest_id);
+      onGenerationStart(data.news_digest_id, data.initial_status, data.message);
       setNotification(null); // Clear previous errors
       // Optionally reset parts of the form or give other success feedback
     },

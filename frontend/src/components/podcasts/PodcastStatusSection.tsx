@@ -1,12 +1,13 @@
 import React from 'react';
 import PodcastStatusCard from './PodcastStatusCard';
+import type { ActivePodcastInfo } from '../../pages/HomePage';
 
 interface PodcastStatusSectionProps {
-  activeDigestIds: number[];
+  activePodcasts: ActivePodcastInfo[];
 }
 
-const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activeDigestIds }) => {
-  if (activeDigestIds.length === 0) {
+const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activePodcasts }) => {
+  if (activePodcasts.length === 0) {
     return (
       <div className="mt-8 sm:mt-10 p-4 sm:p-6 bg-gray-800 rounded-xl shadow-xl">
         <h2 className="text-xl sm:text-2xl font-semibold text-center text-purple-400 mb-2 sm:mb-3">Ready to Generate?</h2>
@@ -23,8 +24,14 @@ const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activeDiges
         Active Podcast Generations
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {activeDigestIds.map(id => (
-          <PodcastStatusCard key={id} newsDigestId={id} />
+        {activePodcasts.map(podcast => (
+          <PodcastStatusCard 
+            key={podcast.id} 
+            newsDigestId={podcast.id} 
+            initialStatus={podcast.initialStatus}
+            initialMessage={podcast.initialMessage}
+            isCached={podcast.isCached}
+          />
         ))}
       </div>
     </div>
