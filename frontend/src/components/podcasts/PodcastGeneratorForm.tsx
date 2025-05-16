@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatePodcast } from '../../services/podcastService.js';
-import type { PodcastGenerationRequest, PodcastGenerationResponse } from '../../types/api';
+import type { PodcastGenerationRequest, PodcastGenerationResponse, UserPreference } from '../../types/api';
 import { Button } from '../common/Button.js';
 import { Input } from '../common/Input.js';
 import { Select } from '../common/Select.js';
 import { Checkbox } from '../common/Checkbox.js'; // Assuming Checkbox component exists or will be created
 import { Loader2, AlertCircle, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { fetchUserPreferences } from '../../services/preferenceService'; // Added import
 
 // Define language and audio style options (can be moved to a shared config if used elsewhere)
 const languageOptions = [
@@ -51,6 +52,42 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
   const [showOpenAiKey, setShowOpenAiKey] = useState(false);
   const [showGoogleKey, setShowGoogleKey] = useState(false);
 
+  const { data: userPreferences, isLoading: isLoadingPreferences } = 
+    useQuery<UserPreference, Error>({
+      queryKey: ['userPreferencesForGeneratorForm'], // Unique query key
+      queryFn: fetchUserPreferences,
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      refetchOnWindowFocus: false, // Optional: prevent refetch on window focus if not desired
+    });
+
+  useEffect(() => {
+    if (formData.use_user_default_preferences) {
+      if (userPreferences) {
+        setFormData(prev => ({
+          ...prev,
+          language: userPreferences.default_language || 'en',
+          audio_style: userPreferences.default_audio_style || 'standard',
+        }));
+      } else if (!isLoadingPreferences) {
+        // Preferences not available (either not set or error fetching), use app defaults
+        setFormData(prev => ({
+            ...prev,
+            language: 'en', 
+            audio_style: 'standard',
+        }));
+      }
+      // While loading preferences, language/audio_style will remain as their initial/previous ad-hoc values
+      // or be set to app defaults once loading finishes and no prefs are found.
+    } else {
+      // When 'use_user_default_preferences' is unchecked, revert to application defaults for ad-hoc selection
+      setFormData(prev => ({
+        ...prev,
+        language: 'en',
+        audio_style: 'standard',
+      }));
+    }
+  }, [formData.use_user_default_preferences, userPreferences, isLoadingPreferences]);
+
   const mutation = useMutation<PodcastGenerationResponse, Error, PodcastGenerationRequest>({
     mutationFn: generatePodcast,
     onSuccess: (data) => {
@@ -93,45 +130,75 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
       return;
     }
 
-    const payload: PodcastGenerationRequest = {
-      use_user_default_preferences: formData.use_user_default_preferences ?? true,
-      language: formData.language,
-      audio_style: formData.audio_style,
-      force_regenerate: formData.force_regenerate ?? false,
-      user_openai_api_key: formData.user_openai_api_key?.trim() ? formData.user_openai_api_key.trim() : null,
-      user_google_api_key: formData.user_google_api_key?.trim() ? formData.user_google_api_key.trim() : null,
-      specific_article_urls: (formData.specific_article_urls || []).filter(u => u.trim() !== ''),
-      request_topics: formData.use_user_default_preferences ? (formData.request_topics || []).filter(t => t.trim() !== '') : (formData.request_topics || []).filter(t => t.trim() !== ''),
-      request_keywords: formData.use_user_default_preferences ? (formData.request_keywords || []).filter(k => k.trim() !== '') : (formData.request_keywords || []).filter(k => k.trim() !== ''),
-      request_rss_urls: formData.use_user_default_preferences ? (formData.request_rss_urls || []).filter(r => r.trim() !== '') : (formData.request_rss_urls || []).filter(r => r.trim() !== ''),
-      request_exclude_keywords: formData.use_user_default_preferences ? (formData.request_exclude_keywords || []).filter(e => e.trim() !== '') : undefined,
-      request_exclude_source_domains: formData.use_user_default_preferences ? (formData.request_exclude_source_domains || []).filter(d => d.trim() !== '') : undefined,
+    // --- NEW PAYLOAD CONSTRUCTION LOGIC ---
+    const usePrefs = formData.use_user_default_preferences ?? true;
+    // Determine if "Specific Article URLs" mode is active (URLs are provided and non-empty)
+    const isUrlModeActive = (formData.specific_article_urls?.filter(u => u.trim() !== '').length ?? 0) > 0;
+
+    // Prepare cleaned versions of form inputs for lists
+    // These will be empty arrays if no valid items are provided by the user
+    const formTopics = (formData.request_topics || []).filter(t => t.trim() !== '');
+    const formKeywords = (formData.request_keywords || []).filter(k => k.trim() !== '');
+    const formRssUrls = (formData.request_rss_urls || []).filter(r => r.trim() !== '');
+    const formExcludeKeywords = (formData.request_exclude_keywords || []).filter(e => e.trim() !== '');
+    const formExcludeSourceDomains = (formData.request_exclude_source_domains || []).filter(d => d.trim() !== '');
+
+    // Initialize payload with common fields
+    const finalPayload: PodcastGenerationRequest = {
+        language: formData.language!, // Already validated to be present
+        audio_style: formData.audio_style!, // Already validated to be present
+        force_regenerate: formData.force_regenerate ?? false,
+        user_openai_api_key: formData.user_openai_api_key?.trim() ? formData.user_openai_api_key.trim() : null,
+        user_google_api_key: formData.user_google_api_key?.trim() ? formData.user_google_api_key.trim() : null,
+
+        // These will be conditionally populated
+        specific_article_urls: null,
+        use_user_default_preferences: false, // Default to false, will be set based on mode
+        request_topics: null,
+        request_keywords: null,
+        request_rss_urls: null,
+        request_exclude_keywords: null,
+        request_exclude_source_domains: null,
     };
-    
-    // If not using default preferences, ensure ad-hoc fields are primary
-    if (!payload.use_user_default_preferences) {
-        payload.request_topics = (formData.request_topics || []).filter(t => t.trim() !== '');
-        payload.request_keywords = (formData.request_keywords || []).filter(k => k.trim() !== '');
-        payload.request_rss_urls = (formData.request_rss_urls || []).filter(r => r.trim() !== '');
-        // Exclusions are not typically set for pure ad-hoc if not overriding, so they might remain undefined
-        // or you might decide to include them if the UI allows for ad-hoc exclusions.
-    }
 
-    // Clear specific_article_urls if use_user_default_preferences or ad-hoc mode is active
-    if (formData.use_user_default_preferences || (!formData.use_user_default_preferences && (!formData.specific_article_urls || formData.specific_article_urls.length === 0))) {
-      if ((formData.specific_article_urls?.length ?? 0) > 0) { /* only clear if urls are not the primary source */ }
-      else { payload.specific_article_urls = null; }
+    if (isUrlModeActive) {
+        // Mode 1: Specific Article URLs
+        finalPayload.specific_article_urls = (formData.specific_article_urls || []).filter(u => u.trim() !== '');
+        // use_user_default_preferences remains false (or explicitly set to false)
+        // All other request_* (topics, keywords, etc.) remain null as they are not applicable
+        finalPayload.use_user_default_preferences = false; 
+    } else if (usePrefs) {
+        // Mode 2: Use User Default Preferences (with potential overrides)
+        finalPayload.use_user_default_preferences = true;
+        
+        // Only send override values if they are explicitly provided (i.e., list is not empty)
+        // Otherwise, send null to indicate "no override for this field"
+        finalPayload.request_topics = formTopics.length > 0 ? formTopics : null;
+        finalPayload.request_keywords = formKeywords.length > 0 ? formKeywords : null;
+        finalPayload.request_rss_urls = formRssUrls.length > 0 ? formRssUrls : null;
+        
+        // Exclusions are only relevant as overrides when usePrefs is true
+        finalPayload.request_exclude_keywords = formExcludeKeywords.length > 0 ? formExcludeKeywords : null;
+        finalPayload.request_exclude_source_domains = formExcludeSourceDomains.length > 0 ? formExcludeSourceDomains : null;
     } else {
-        // If specific_article_urls is the primary source, nullify preference-based fields for clarity in the backend
-        payload.request_topics = null;
-        payload.request_keywords = null;
-        payload.request_rss_urls = null;
-        payload.request_exclude_keywords = null;
-        payload.request_exclude_source_domains = null;
+        // Mode 3: Ad-hoc Criteria (not using URLs, not using stored preferences)
+        finalPayload.use_user_default_preferences = false;
+        
+        // Send form values as they are. Empty arrays are meaningful for ad-hoc
+        // (e.g., "generate ad-hoc podcast with these specific (empty) topics").
+        finalPayload.request_topics = formTopics;
+        finalPayload.request_keywords = formKeywords;
+        finalPayload.request_rss_urls = formRssUrls;
+        
+        // Per schema: request_exclude_keywords/domains are overrides for user preferences.
+        // If not using user preferences (ad-hoc), these should be null as they don't apply.
+        finalPayload.request_exclude_keywords = null;
+        finalPayload.request_exclude_source_domains = null;
     }
-
-
-    mutation.mutate(payload);
+    // --- END OF NEW PAYLOAD CONSTRUCTION LOGIC ---
+    
+    // console.log("Final payload being sent:", finalPayload); // For debugging
+    mutation.mutate(finalPayload);
   };
 
   const renderListInput = (
