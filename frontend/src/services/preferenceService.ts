@@ -1,4 +1,4 @@
-import apiClient from '../lib/apiClient';
+import apiClient from '../lib/apiClient.ts';
 import type { UserPreference, UserPreferenceUpdate } from '../types/api';
 
 export const fetchUserPreferences = async (): Promise<UserPreference> => {
