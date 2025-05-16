@@ -194,6 +194,11 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         finalPayload.specific_article_urls = (formData.specific_article_urls || []).filter(u => u.trim() !== '');
     } else if (currentSelectedCatId) {
         finalPayload.predefined_category_id = currentSelectedCatId;
+        finalPayload.request_topics = formTopics.length > 0 ? formTopics : null;
+        finalPayload.request_keywords = formKeywords.length > 0 ? formKeywords : null;
+        finalPayload.request_rss_urls = formRssUrls.length > 0 ? formRssUrls : null;
+        finalPayload.request_exclude_keywords = formExcludeKeywords.length > 0 ? formExcludeKeywords : null;
+        finalPayload.request_exclude_source_domains = formExcludeSourceDomains.length > 0 ? formExcludeSourceDomains : null;
     } else if (currentUseUserPrefs) {
         finalPayload.use_user_default_preferences = true;
         finalPayload.request_topics = formTopics.length > 0 ? formTopics : null;
@@ -202,11 +207,11 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         finalPayload.request_exclude_keywords = formExcludeKeywords.length > 0 ? formExcludeKeywords : null;
         finalPayload.request_exclude_source_domains = formExcludeSourceDomains.length > 0 ? formExcludeSourceDomains : null;
     } else {
-        finalPayload.request_topics = formTopics;
-        finalPayload.request_keywords = formKeywords;
-        finalPayload.request_rss_urls = formRssUrls;
-        finalPayload.request_exclude_keywords = formExcludeKeywords;
-        finalPayload.request_exclude_source_domains = formExcludeSourceDomains;
+        finalPayload.request_topics = formTopics.length > 0 ? formTopics : null;
+        finalPayload.request_keywords = formKeywords.length > 0 ? formKeywords : null;
+        finalPayload.request_rss_urls = formRssUrls.length > 0 ? formRssUrls : null;
+        finalPayload.request_exclude_keywords = formExcludeKeywords.length > 0 ? formExcludeKeywords : null;
+        finalPayload.request_exclude_source_domains = formExcludeSourceDomains.length > 0 ? formExcludeSourceDomains : null;
     }
     
     mutation.mutate(finalPayload);
