@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { generatePodcast } from '../../services/podcastService';
+import { generatePodcast } from '../../services/podcastService.js';
 import type { PodcastGenerationRequest, PodcastGenerationResponse } from '../../types/api';
-import { Button } from '../common/Button';
-import { Input } from '../common/Input';
-import { Select } from '../common/Select';
-import { Checkbox } from '../common/Checkbox'; // Assuming Checkbox component exists or will be created
-import { Loader2, AlertCircle, Radio, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Button } from '../common/Button.js';
+import { Input } from '../common/Input.js';
+import { Select } from '../common/Select.js';
+import { Checkbox } from '../common/Checkbox.js'; // Assuming Checkbox component exists or will be created
+import { Loader2, AlertCircle, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 // Define language and audio style options (can be moved to a shared config if used elsewhere)
 const languageOptions = [
@@ -175,7 +175,6 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
     </div>
   );
 
-  const isAdhocMode = !formData.use_user_default_preferences && (formData.specific_article_urls?.length ?? 0) === 0;
   const isUrlMode = (formData.specific_article_urls?.length ?? 0) > 0;
   const isPreferenceOverrideMode = formData.use_user_default_preferences && !isUrlMode;
 

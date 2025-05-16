@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateUserPreferences } from '../../services/preferenceService';
+import { updateUserPreferences } from '../../services/preferenceService.js';
 import type { UserPreference, UserPreferenceUpdate } from '../../types/api';
-import { Button } from '../common/Button'; // Assuming Button component exists
-import { Input } from '../common/Input';   // Assuming Input component exists
-import { Textarea } from '../common/Textarea'; // Assuming Textarea component exists (for lists)
-import { Select } from '../common/Select'; // Assuming Select component exists
+import { Button } from '../common/Button.js';
+import { Input } from '../common/Input.js';
+import { Select } from '../common/Select.js';
 import { Check, AlertCircle, Save, PlusCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface PreferencesFormProps {
@@ -114,7 +113,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
             type={inputType}
             name={`${field}-${index}`}
             value={item}
-            onChange={(e) => handleListChange(field, index, e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange(field, index, e.target.value)}
             placeholder={placeholder}
             className="flex-grow bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
           />
