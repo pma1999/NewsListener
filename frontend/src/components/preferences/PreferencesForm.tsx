@@ -105,22 +105,22 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
     placeholder: string,
     inputType: 'text' | 'url' = 'text'
   ) => (
-    <div className="mb-6">
-      <label className="block text-sm font-medium text-purple-300 mb-1">{label}</label>
+    <div className="mb-5 sm:mb-6">
+      <label className="block text-sm font-medium text-purple-300 mb-1.5">{label}</label>
       {(formData[field] as string[] || []).map((item, index) => (
-        <div key={index} className="flex items-center mb-2">
+        <div key={index} className="flex flex-col sm:flex-row items-stretch sm:items-center mb-2">
           <Input
             type={inputType}
             name={`${field}-${index}`}
             value={item}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange(field, index, e.target.value)}
             placeholder={placeholder}
-            className="flex-grow bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
+            className="flex-grow bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 mb-1.5 sm:mb-0 sm:mr-2"
           />
           <Button 
             variant="icon" 
             onClick={() => removeListItem(field, index)} 
-            className="ml-2 text-red-500 hover:text-red-400 p-2"
+            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2 self-end sm:self-center flex-shrink-0"
             aria-label={`Remove ${label.slice(0,-1)}`}
           >
             <XCircle size={20} />
@@ -130,7 +130,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
       <Button 
         variant="outline" 
         onClick={() => addListItem(field)} 
-        className="mt-1 text-purple-400 border-purple-400 hover:bg-purple-500/20"
+        className="mt-1 text-sm text-purple-400 border-purple-400 hover:bg-purple-500/20 w-full sm:w-auto"
       >
         <PlusCircle size={18} className="mr-2" /> Add {label.slice(0,-1)}
       </Button>
@@ -138,19 +138,19 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
   );
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl space-y-5 sm:space-y-6">
       {notification && (
         <div 
-          className={`p-4 rounded-md flex items-center text-sm 
+          className={`p-3 sm:p-4 rounded-md flex items-start sm:items-center text-sm 
             ${notification.type === 'success' ? 'bg-green-700/30 text-green-300 border border-green-600' : 'bg-red-700/30 text-red-300 border border-red-600'}
           `}
         >
-          {notification.type === 'success' ? <Check size={20} className="mr-2" /> : <AlertCircle size={20} className="mr-2" />}
-          {notification.message}
+          {notification.type === 'success' ? <Check size={20} className="mr-2 flex-shrink-0 mt-0.5 sm:mt-0" /> : <AlertCircle size={20} className="mr-2 flex-shrink-0 mt-0.5 sm:mt-0" />}
+          <span>{notification.message}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div>
           <label htmlFor="default_language" className="block text-sm font-medium text-purple-300 mb-1">Default Language</label>
           <Select
@@ -181,10 +181,10 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
       {renderListInput('exclude_keywords', 'Exclude Keywords/Phrases', 'e.g., celebrity gossip')}
       {renderListInput('exclude_source_domains', 'Exclude Source Domains', 'e.g., tabloid.com')}
 
-      <div className="pt-4 border-t border-gray-700">
+      <div className="pt-3 sm:pt-4 border-t border-gray-700">
         <Button 
           type="submit" 
-          className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white py-3"
+          className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white py-2.5 sm:py-3 text-sm sm:text-base"
           disabled={mutation.isPending}
         >
           {mutation.isPending ? (

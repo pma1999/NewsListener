@@ -12,8 +12,8 @@ const ProtectedRoute: React.FC = () => {
   if (isLoading || (token && !isAuthenticated)) {
     // You can replace this with a more sophisticated loading spinner component
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <p>Loading authentication status...</p>
+        <div className="flex justify-center items-center h-screen bg-gray-900 text-gray-300">
+            <p className="text-lg">Loading authentication status...</p>
         </div>
     );
   }

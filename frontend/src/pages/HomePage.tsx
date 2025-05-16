@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-12">
+    <div className="container mx-auto p-4 sm:p-6 md:p-8 space-y-8 sm:space-y-12">
       <PodcastGeneratorForm onGenerationStart={handlePodcastGenerationStart} />
       <PodcastStatusSection activeDigestIds={activeDigestIds} />
     </div>

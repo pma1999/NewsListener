@@ -142,21 +142,21 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
     disabledCondition?: boolean
   ) => (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-purple-300 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-purple-300 mb-1.5">{label}</label>
       {(formData[field] as string[] || []).map((item, index) => (
-        <div key={index} className="flex items-center mb-2">
+        <div key={index} className="flex flex-col sm:flex-row items-stretch sm:items-center mb-2">
           <Input
             type={inputType}
             value={item}
             onChange={(e) => handleListChange(field, index, e.target.value)}
             placeholder={placeholder}
-            className="flex-grow bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 disabled:opacity-50"
+            className="flex-grow bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 disabled:opacity-50 mb-1.5 sm:mb-0 sm:mr-2"
             disabled={disabledCondition}
           />
           <Button 
             variant="icon" 
             onClick={() => removeListItem(field, index)} 
-            className="ml-2 text-red-500 hover:text-red-400 p-2 disabled:opacity-50"
+            className="ml-auto sm:ml-0 text-red-500 hover:text-red-400 p-2 disabled:opacity-50 self-end sm:self-center flex-shrink-0"
             aria-label={`Remove ${label.slice(0,-1)}`}
             disabled={disabledCondition}
           >
@@ -167,7 +167,7 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
       <Button 
         variant="outline" 
         onClick={() => addListItem(field)} 
-        className="mt-1 text-purple-400 border-purple-400 hover:bg-purple-500/20 disabled:opacity-50"
+        className="mt-1 text-sm text-purple-400 border-purple-400 hover:bg-purple-500/20 disabled:opacity-50 w-full sm:w-auto"
         disabled={disabledCondition}
       >
         <PlusCircle size={18} className="mr-2" /> Add {label.slice(0,-1)}
@@ -179,18 +179,19 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
   const isPreferenceOverrideMode = formData.use_user_default_preferences && !isUrlMode;
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl space-y-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-center text-purple-400 mb-6">Create New Podcast</h2>
+    <form onSubmit={handleSubmit} className="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl space-y-6 max-w-2xl mx-auto">
+      <h2 className="text-xl sm:text-2xl font-bold text-center text-purple-400 mb-4 sm:mb-6">Create New Podcast</h2>
       
       {notification && (
-        <div className="p-3 rounded-md flex items-center text-sm bg-red-700/30 text-red-300 border border-red-600">
-          <AlertCircle size={20} className="mr-2 flex-shrink-0" /> {notification.message}
+        <div className="p-3 rounded-md flex items-start sm:items-center text-sm bg-red-700/30 text-red-300 border border-red-600">
+          <AlertCircle size={20} className="mr-2 flex-shrink-0 mt-0.5 sm:mt-0" /> 
+          <span>{notification.message}</span>
         </div>
       )}
 
       {/* Source Selection Logic */}
-      <div className="space-y-3 p-4 border border-gray-700 rounded-lg">
-        <h3 className="text-lg font-semibold text-purple-300 mb-2">Content Source:</h3>
+      <div className="space-y-3 p-3 sm:p-4 border border-gray-700 rounded-lg">
+        <h3 className="text-base sm:text-lg font-semibold text-purple-300 mb-2">Content Source:</h3>
         <Checkbox
           name="specific_article_urls_toggle" // Temporary name for UI logic
           label="From Specific Article URLs"
@@ -223,8 +224,8 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
 
       {/* Ad-hoc / Override Fields - visibility depends on source selection */}
       {(!isUrlMode) && (
-        <div className={`p-4 border border-gray-700 rounded-lg space-y-4 ${isPreferenceOverrideMode ? 'opacity-70' : ''}`}>
-          <h3 className="text-lg font-semibold text-purple-300">
+        <div className={`p-3 sm:p-4 border border-gray-700 rounded-lg space-y-4 ${isPreferenceOverrideMode ? 'opacity-70' : ''}`}>
+          <h3 className="text-base sm:text-lg font-semibold text-purple-300">
             {isPreferenceOverrideMode ? 'Override Preferences For This Podcast:' : 'Ad-hoc Criteria For This Podcast:'}
           </h3>
           {renderListInput('request_topics', 'Topics', 'e.g., AI, Space Exploration', 'text', isUrlMode)}
@@ -240,7 +241,7 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-4 border-t border-gray-700">
         <div>
           <label htmlFor="language" className="block text-sm font-medium text-purple-300 mb-1">Language</label>
           <Select id="language" name="language" value={formData.language} onChange={handleInputChange} options={languageOptions} className="bg-gray-700 border-gray-600" />
@@ -252,17 +253,17 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
       </div>
 
       {/* API Key Inputs */}
-      <div className="p-4 border border-gray-700 rounded-lg space-y-4">
-        <h3 className="text-lg font-semibold text-purple-300 flex items-center">
+      <div className="p-3 sm:p-4 border border-gray-700 rounded-lg space-y-4">
+        <h3 className="text-base sm:text-lg font-semibold text-purple-300 flex items-center">
           <KeyRound size={20} className="mr-2 text-yellow-400" /> Optional API Keys
         </h3>
-        <p className="text-xs text-gray-400 mb-3">
+        <p className="text-xs sm:text-sm text-gray-400 mb-3">
           If you provide your own API keys, they will be used for this generation request only and will not be stored.
           This will override any system-configured keys for this request.
         </p>
         <div>
           <label htmlFor="user_openai_api_key" className="block text-sm font-medium text-purple-300 mb-1">OpenAI API Key (for TTS)</label>
-          <div className="relative">
+          <div className="relative flex items-center">
             <Input
               id="user_openai_api_key"
               name="user_openai_api_key"
@@ -270,13 +271,13 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
               value={formData.user_openai_api_key || ''}
               onChange={handleInputChange}
               placeholder="sk-..."
-              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10"
+              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10 w-full"
             />
             <Button
               type="button"
               variant="icon"
               onClick={() => setShowOpenAiKey(!showOpenAiKey)}
-              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
+              className="absolute inset-y-0 right-0 px-2 sm:px-3 flex items-center text-gray-400 hover:text-gray-200"
               aria-label={showOpenAiKey ? "Hide OpenAI API Key" : "Show OpenAI API Key"}
             >
               {showOpenAiKey ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -285,7 +286,7 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         </div>
         <div>
           <label htmlFor="user_google_api_key" className="block text-sm font-medium text-purple-300 mb-1">Google API Key (for Gemini)</label>
-           <div className="relative">
+           <div className="relative flex items-center">
             <Input
               id="user_google_api_key"
               name="user_google_api_key"
@@ -293,13 +294,13 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
               value={formData.user_google_api_key || ''}
               onChange={handleInputChange}
               placeholder="AIzaSy..."
-              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10"
+              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10 w-full"
             />
             <Button
               type="button"
               variant="icon"
               onClick={() => setShowGoogleKey(!showGoogleKey)}
-              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
+              className="absolute inset-y-0 right-0 px-2 sm:px-3 flex items-center text-gray-400 hover:text-gray-200"
               aria-label={showGoogleKey ? "Hide Google API Key" : "Show Google API Key"}
             >
               {showGoogleKey ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -313,11 +314,12 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         label="Force Regenerate (ignore any cached version)"
         checked={formData.force_regenerate ?? false}
         onChange={handleInputChange}
+        className="text-sm"
       />
 
       <Button 
         type="submit" 
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 mt-2"
+        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 sm:py-3 mt-2 text-sm sm:text-base"
         disabled={mutation.isPending}
       >
         {mutation.isPending ? <Loader2 size={20} className="animate-spin mr-2" /> : <Wand2 size={20} className="mr-2" />} 
