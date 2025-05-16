@@ -24,3 +24,4 @@ beautifulsoup4
 # pytest-asyncio
 httpx # For testing FastAPI endpoints
 passlib[bcrypt] # For password hashing
+bcrypt==4.0.1 # Pin bcrypt to version 4.0.1 to avoid passlib warning
