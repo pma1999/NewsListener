@@ -1,4 +1,4 @@
-import apiClient from '../lib/apiClient.ts';
+import apiClient from '@/lib/apiClient';
 import type {
   PodcastGenerationRequest,
   PodcastGenerationResponse,
