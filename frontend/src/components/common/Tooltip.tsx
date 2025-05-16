@@ -38,12 +38,19 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children, placement = 'top', cl
     whileElementsMounted: autoUpdate,
   });
 
-  const staticSide = {
+  // Define a type for the keys of staticSideMap
+  type StaticSideMapKey = 'top' | 'right' | 'bottom' | 'left';
+
+  const staticSideMap: Record<StaticSideMapKey, StaticSideMapKey> = {
     top: 'bottom',
     right: 'left',
     bottom: 'top',
     left: 'right',
-  }[context.placement.split('-')[0]] || 'bottom';
+  };
+  
+  // Determine staticSide safely
+  const placementStart = context.placement.split('-')[0] as StaticSideMapKey;
+  const staticSide = staticSideMap[placementStart] || 'bottom'; // Fallback, though flip should prevent invalid states
 
   // Ensure we only attempt to clone a single, valid React element.
   const child = Children.only(children);
