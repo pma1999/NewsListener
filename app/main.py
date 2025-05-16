@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi.middleware.cors import CORSMiddleware # Added for CORS
 
 from app.core.config import settings
 from app.api.endpoints import podcast_generation
@@ -25,6 +26,22 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     openapi_url=f"/api/v1/openapi.json" # Standard OpenAPI path
+)
+
+# --- CORS Middleware ---
+# Define allowed origins. Adjust for production.
+origins = [
+    "http://localhost:5173",  # Default Vite dev server
+    "http://127.0.0.1:5173",
+    # Add your production frontend URL here when deployed
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods
+    allow_headers=["*"], # Allows all headers
 )
 
 # --- Event Handlers ---

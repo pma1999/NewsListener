@@ -128,6 +128,9 @@ local.env
 # FastAPI / Uvicorn temp files (if any)
 # *.db-journal # Already covered by general db.sqlite3-journal
 
+# Node / NPM
+frontend/node_modules/
+
 # NewsListener specific
 newslistener.db
 newslistener_fallback.db
@@ -136,4 +139,29 @@ app/static/audio/*.mp3
 !app/static/audio/.gitkeep # If you want to keep the directory in git even if empty initially
 
 # Cursor-specific files
-.cursor/ 
+.cursor/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
