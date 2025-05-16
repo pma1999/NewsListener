@@ -52,7 +52,7 @@ class Settings:
 
     # CORS settings
     # Allow origins to be a comma-separated string from env, defaulting to a typical local dev setup
-    CORS_ALLOWED_ORIGINS_STR: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    CORS_ALLOWED_ORIGINS_STR: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://news-listener.vercel.app")
     
     @property
     def CORS_ALLOWED_ORIGINS(self) -> list[str]:

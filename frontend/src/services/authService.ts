@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { UserCreateData, UserResponseData, LoginCredentials, TokenResponse } from '../types/authTypes';
+import { config as appConfig } from '../config'; // Import centralized config
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // Base URL for the API
-const API_V1_STR = '/api/v1'; // API version string, consistent with backend settings
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // Base URL for the API - REMOVED
+// const API_V1_STR = '/api/v1'; // API version string, consistent with backend settings - REMOVED
 
 const authApi = axios.create({
-  baseURL: `${API_BASE_URL}${API_V1_STR}/auth`,
+  baseURL: `${appConfig.apiBaseUrl}/auth`, // Use centralized config, append /auth
 });
 
 export const registerUser = async (userData: UserCreateData): Promise<UserResponseData> => {
