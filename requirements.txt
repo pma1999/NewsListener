@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy
 psycopg2-binary # Optional: if using PostgreSQL, otherwise remove for SQLite only
 python-dotenv
+python-jose[cryptography] # For JWT handling in deps.py
 openai
 pydub
 langchain
