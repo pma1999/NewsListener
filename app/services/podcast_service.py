@@ -93,7 +93,8 @@ async def generate_podcast_audio_for_digest(
     news_digest_id: int,
     language: str,
     audio_style: str,
-    force_regenerate: bool = False
+    force_regenerate: bool = False,
+    user_openai_api_key: Optional[str] = None
 ) -> Tuple[Optional[str], Optional[str]]: # Returns (audio_url, error_message)
     """
     Generates audio for a specific news digest using its pre-generated script.
@@ -105,6 +106,7 @@ async def generate_podcast_audio_for_digest(
         language: ISO language code (e.g., 'en', 'es').
         audio_style: Key for the desired audio style.
         force_regenerate: If True, generates audio even if a cached version exists.
+        user_openai_api_key: Optional user-provided OpenAI API key.
 
     Returns:
         A tuple (audio_url, error_message). audio_url is the public URL if successful,
@@ -148,7 +150,7 @@ async def generate_podcast_audio_for_digest(
     # --- Key and TTS Configuration ---
     try:
         key_provider = OpenAIKeyProvider()
-        api_key = await key_provider.get_key()
+        api_key = await key_provider.get_key(user_provided_key=user_openai_api_key)
     except ValueError as e:
         logger.error(f"Failed to get OpenAI API key: {e}")
         news_digest.status = NewsDigestStatus.FAILED

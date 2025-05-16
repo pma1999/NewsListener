@@ -20,7 +20,9 @@ async def background_generate_full_podcast(
     news_digest_id: int,
     user_id: int, 
     generation_criteria: Dict[str, Any],
-    force_regenerate: bool
+    force_regenerate: bool,
+    user_openai_api_key: Optional[str] = None,
+    user_google_api_key: Optional[str] = None
 ):
     """
     The complete background task using consolidated generation criteria.
@@ -60,7 +62,8 @@ async def background_generate_full_podcast(
         generated_script = await llm_service.generate_news_podcast_script(
             news_items_content=processed_news_content,
             language_iso_code=language,
-            audio_style_key=audio_style
+            audio_style_key=audio_style,
+            user_google_api_key=user_google_api_key
         )
         news_digest.generated_script_text = generated_script
         logger.info(f"[BG_TASK] NewsDigest {news_digest_id}: Script generated. Length: {len(generated_script)}")
@@ -71,7 +74,8 @@ async def background_generate_full_podcast(
             news_digest_id=news_digest_id,
             language=language,
             audio_style=audio_style,
-            force_regenerate=force_regenerate
+            force_regenerate=force_regenerate,
+            user_openai_api_key=user_openai_api_key
         )
 
         if error_msg:
@@ -228,7 +232,9 @@ async def generate_podcast_endpoint(
         news_digest_id=news_digest.id,
         user_id=current_user.id,
         generation_criteria=generation_criteria,
-        force_regenerate=request.force_regenerate
+        force_regenerate=request.force_regenerate,
+        user_openai_api_key=request.user_openai_api_key,
+        user_google_api_key=request.user_google_api_key
     )
 
     return podcast_schemas.PodcastGenerationResponse(

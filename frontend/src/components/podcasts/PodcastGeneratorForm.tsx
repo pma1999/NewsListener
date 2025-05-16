@@ -6,7 +6,7 @@ import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { Checkbox } from '../common/Checkbox'; // Assuming Checkbox component exists or will be created
-import { Loader2, AlertCircle, Radio, PlusCircle, XCircle, Wand2 } from 'lucide-react';
+import { Loader2, AlertCircle, Radio, PlusCircle, XCircle, Wand2, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 // Define language and audio style options (can be moved to a shared config if used elsewhere)
 const languageOptions = [
@@ -44,8 +44,12 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
     request_rss_urls: [],
     request_exclude_keywords: [],
     request_exclude_source_domains: [],
+    user_openai_api_key: '',
+    user_google_api_key: '',
   });
   const [notification, setNotification] = useState<{ type: 'error'; message: string } | null>(null);
+  const [showOpenAiKey, setShowOpenAiKey] = useState(false);
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
 
   const mutation = useMutation<PodcastGenerationResponse, Error, PodcastGenerationRequest>({
     mutationFn: generatePodcast,
@@ -94,6 +98,8 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
       language: formData.language,
       audio_style: formData.audio_style,
       force_regenerate: formData.force_regenerate ?? false,
+      user_openai_api_key: formData.user_openai_api_key?.trim() ? formData.user_openai_api_key.trim() : null,
+      user_google_api_key: formData.user_google_api_key?.trim() ? formData.user_google_api_key.trim() : null,
       specific_article_urls: (formData.specific_article_urls || []).filter(u => u.trim() !== ''),
       request_topics: formData.use_user_default_preferences ? (formData.request_topics || []).filter(t => t.trim() !== '') : (formData.request_topics || []).filter(t => t.trim() !== ''),
       request_keywords: formData.use_user_default_preferences ? (formData.request_keywords || []).filter(k => k.trim() !== '') : (formData.request_keywords || []).filter(k => k.trim() !== ''),
@@ -243,6 +249,63 @@ const PodcastGeneratorForm: React.FC<PodcastGeneratorFormProps> = ({ onGeneratio
         <div>
           <label htmlFor="audio_style" className="block text-sm font-medium text-purple-300 mb-1">Audio Style</label>
           <Select id="audio_style" name="audio_style" value={formData.audio_style} onChange={handleInputChange} options={audioStyleOptions} className="bg-gray-700 border-gray-600" />
+        </div>
+      </div>
+
+      {/* API Key Inputs */}
+      <div className="p-4 border border-gray-700 rounded-lg space-y-4">
+        <h3 className="text-lg font-semibold text-purple-300 flex items-center">
+          <KeyRound size={20} className="mr-2 text-yellow-400" /> Optional API Keys
+        </h3>
+        <p className="text-xs text-gray-400 mb-3">
+          If you provide your own API keys, they will be used for this generation request only and will not be stored.
+          This will override any system-configured keys for this request.
+        </p>
+        <div>
+          <label htmlFor="user_openai_api_key" className="block text-sm font-medium text-purple-300 mb-1">OpenAI API Key (for TTS)</label>
+          <div className="relative">
+            <Input
+              id="user_openai_api_key"
+              name="user_openai_api_key"
+              type={showOpenAiKey ? 'text' : 'password'}
+              value={formData.user_openai_api_key || ''}
+              onChange={handleInputChange}
+              placeholder="sk-..."
+              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10"
+            />
+            <Button
+              type="button"
+              variant="icon"
+              onClick={() => setShowOpenAiKey(!showOpenAiKey)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
+              aria-label={showOpenAiKey ? "Hide OpenAI API Key" : "Show OpenAI API Key"}
+            >
+              {showOpenAiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+            </Button>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="user_google_api_key" className="block text-sm font-medium text-purple-300 mb-1">Google API Key (for Gemini)</label>
+           <div className="relative">
+            <Input
+              id="user_google_api_key"
+              name="user_google_api_key"
+              type={showGoogleKey ? 'text' : 'password'}
+              value={formData.user_google_api_key || ''}
+              onChange={handleInputChange}
+              placeholder="AIzaSy..."
+              className="bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500 pr-10"
+            />
+            <Button
+              type="button"
+              variant="icon"
+              onClick={() => setShowGoogleKey(!showGoogleKey)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
+              aria-label={showGoogleKey ? "Hide Google API Key" : "Show Google API Key"}
+            >
+              {showGoogleKey ? <EyeOff size={18} /> : <Eye size={18} />}
+            </Button>
+          </div>
         </div>
       </div>
 

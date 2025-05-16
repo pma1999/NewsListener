@@ -38,6 +38,8 @@ export interface PodcastGenerationRequest {
   language: string;
   audio_style: string;
   force_regenerate: boolean;
+  user_openai_api_key?: string | null;
+  user_google_api_key?: string | null;
 }
 
 export interface PodcastGenerationResponse {

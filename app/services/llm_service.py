@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from typing import Dict, Any, TypeVar, Generic
+from typing import Dict, Any, TypeVar, Generic, Optional
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import BaseOutputParser, StrOutputParser
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.prompts import NEWS_PODCAST_SCRIPT_PROMPTS_BY_LANG, NEWS_AUDIO_STYLE_CONFIG
 # KeyProvider can be simplified or bypassed if keys come directly from settings for each service type
 # from app.services.key_provider import KeyProvider 
+from app.services.key_provider import GoogleKeyProvider # Added GoogleKeyProvider
 
 logger = logging.getLogger(__name__)
 
@@ -79,17 +80,27 @@ async def run_llm_chain(
     raise Exception(f"LLM chain failed after {max_retries} retries. Last error: {last_error}")
 
 # --- LLM Instantiation ---
-async def get_llm_instance():
-    """Initialize and return the LLM instance, now defaulting to Gemini."""
-    if not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "YOUR_GOOGLE_API_KEY_HERE":
-        logger.error("Google API Key for Gemini LLM is not configured or is set to placeholder.")
-        raise ValueError("GOOGLE_API_KEY for LLM is not configured. Please set it in .env and app/core/config.py.")
+async def get_llm_instance(user_google_api_key: Optional[str] = None):
+    """Initialize and return the LLM instance, now defaulting to Gemini.
+    Uses user_google_api_key if provided, otherwise falls back to settings.
+    """
+    google_key_provider = GoogleKeyProvider()
+    try:
+        actual_google_api_key = await google_key_provider.get_key(user_provided_key=user_google_api_key)
+    except ValueError as e:
+        logger.error(f"Failed to get Google API Key for LLM: {e}")
+        raise ValueError(f"Google API Key for LLM could not be retrieved: {e}")
+
+    # This check becomes redundant if get_key handles it, but kept for defense in depth for now.
+    # if not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "YOUR_GOOGLE_API_KEY_HERE":
+    #     logger.error("Google API Key for Gemini LLM is not configured or is set to placeholder.")
+    #     raise ValueError("GOOGLE_API_KEY for LLM is not configured. Please set it in .env and app/core/config.py.")
     
     logger.info(f"Initializing Google Gemini LLM with model: {settings.GEMINI_MODEL_NAME}")
     try:
         return ChatGoogleGenerativeAI(
             model=settings.GEMINI_MODEL_NAME, 
-            google_api_key=settings.GOOGLE_API_KEY, 
+            google_api_key=actual_google_api_key, # Use the resolved key
             temperature=0.7, # Adjust as needed
             max_output_tokens=8192 # Adjust as needed, Gemini Pro has larger context
         )
@@ -101,7 +112,8 @@ async def get_llm_instance():
 async def generate_news_podcast_script(
     news_items_content: str,
     language_iso_code: str,
-    audio_style_key: str # e.g., "standard", "engaging_storyteller"
+    audio_style_key: str, # e.g., "standard", "engaging_storyteller"
+    user_google_api_key: Optional[str] = None # Added user_google_api_key
 ) -> str:
     """
     Generates a news podcast script using an LLM.
@@ -124,7 +136,7 @@ async def generate_news_podcast_script(
     audio_style_llm_instruction = style_config["llm_script_instruction"]
 
     prompt = ChatPromptTemplate.from_template(prompt_template_str)
-    llm = await get_llm_instance() # Now gets Gemini
+    llm = await get_llm_instance(user_google_api_key=user_google_api_key) # Pass key to get_llm_instance
     parser = StrOutputParser()
 
     MAX_CONTEXT_CHARS = 100000 # Gemini has a larger context window generally

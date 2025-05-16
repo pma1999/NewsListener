@@ -19,6 +19,10 @@ class PodcastGenerationRequest(BaseModel):
 
     force_regenerate: bool = Field(False, title="Force Regenerate", description="If true, regenerates the podcast even if a cached version exists.")
 
+    # User-provided API keys (optional)
+    user_openai_api_key: Optional[str] = Field(None, title="User OpenAI API Key", description="Optional OpenAI API key provided by the user for this request. Will not be stored.", exclude=True) # exclude=True to prevent it from being returned in responses if the model is reused
+    user_google_api_key: Optional[str] = Field(None, title="User Google API Key", description="Optional Google API key provided by the user for this request. Will not be stored.", exclude=True)
+
 class PodcastGenerationResponse(BaseModel):
     news_digest_id: int
     initial_status: str
