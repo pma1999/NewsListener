@@ -45,6 +45,14 @@ class Settings:
     LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY", "YOUR_LANGSMITH_API_KEY_HERE")
     LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "NewsListener") # Default project name
 
+    # CORS settings
+    # Allow origins to be a comma-separated string from env, defaulting to a typical local dev setup
+    CORS_ALLOWED_ORIGINS_STR: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    
+    @property
+    def CORS_ALLOWED_ORIGINS(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ALLOWED_ORIGINS_STR.split(',')]
+
     # CORS settings (example)
     # CORS_ORIGINS: list[str] = ["http://localhost:3000"] # For a React frontend, for example
 
