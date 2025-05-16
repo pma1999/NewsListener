@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-psycopg2-binary # Optional: if using PostgreSQL, otherwise remove for SQLite only
+psycopg2-binary # For PostgreSQL
 python-dotenv
 python-jose[cryptography] # For JWT handling in deps.py
 openai
@@ -23,3 +23,4 @@ beautifulsoup4
 # pytest
 # pytest-asyncio
 httpx # For testing FastAPI endpoints
+passlib[bcrypt] # For password hashing

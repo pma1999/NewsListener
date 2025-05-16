@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware # Added for CORS
 from app.core.config import settings
 from app.api.endpoints import podcast_generation
 from app.api.endpoints import preferences as preferences_router
-from app.db.database import create_db_and_tables, SessionLocal
+from app.api.endpoints import auth as auth_router # New auth router
+from app.db.database import create_db_and_tables, SessionLocal # SessionLocal might be needed if we add logic
 
 # Ensure all model modules are imported before create_db_and_tables is called
 # This helps Base metadata to be populated correctly.
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    openapi_url=f"/api/v1/openapi.json" # Standard OpenAPI path
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard OpenAPI path
 )
 
 # --- CORS Middleware ---
@@ -81,41 +82,32 @@ def on_startup():
         create_db_and_tables()
         logger.info("Database tables checked/created.")
         
-        # You might want to create a default user if one doesn't exist for testing the /generate-podcast endpoint
-        # This is purely for local development convenience without full auth setup yet.
-        db = SessionLocal()
-        try:
-            mock_user = db.query(user_models.User).filter(user_models.User.id == 1).first()
-            if not mock_user:
-                logger.info("Creating mock user with ID 1 for testing purposes.")
-                # In a real app, password should be properly hashed using a utility function.
-                # This is a placeholder for a hashed password.
-                mock_hashed_password = "$2b$12$D4g6sZQkof/2Y8cZmz5p4O9L7E0gCY0jEy0uLh27B6c5E0p9a1x/q" # Example hash
-                user = user_models.User(id=1, email="user@example.com", hashed_password=mock_hashed_password, is_active=True)
-                db.add(user)
-                # Optionally, create default preferences for mock user 1 if they don't exist
-                mock_user_prefs = db.query(preference_models.UserPreference).filter(preference_models.UserPreference.user_id == 1).first()
-                if not mock_user_prefs:
-                    logger.info("Creating default preferences for mock user ID 1.")
-                    default_prefs = preference_models.UserPreference(user_id=1)
-                    db.add(default_prefs)
-                db.commit()
-                logger.info("Mock user and/or default preferences created.")
-            else:
-                logger.info("Mock user with ID 1 already exists.")
-                # Check and create default preferences if missing for existing mock user
-                mock_user_prefs = db.query(preference_models.UserPreference).filter(preference_models.UserPreference.user_id == 1).first()
-                if not mock_user_prefs:
-                    logger.info("Creating default preferences for existing mock user ID 1.")
-                    default_prefs = preference_models.UserPreference(user_id=1)
-                    db.add(default_prefs)
-                    db.commit()
-                    logger.info("Default preferences created for mock user 1.")
-        finally:
-            db.close()
+        # IMPORTANT: Mock user creation is removed to allow for the new auth system.
+        # Users should now be created via the /register endpoint.
+        # For development, if you need a default user, create it through the API after startup.
+        # Example of creating a user if no users exist (for dev ONLY, use with caution):
+        # db = SessionLocal()
+        # try:
+        #     if not db.query(user_models.User).first():
+        #         logger.info("No users found. Creating a default admin user for development.")
+        #         from app.services import user_service
+        #         from app.schemas.user_schemas import UserCreate
+        #         from app.core.config import settings # Assuming you might have default admin credentials in settings
+        #         default_user = UserCreate(
+        #             email=getattr(settings, "FIRST_SUPERUSER_EMAIL", "admin@example.com"),
+        #             password=getattr(settings, "FIRST_SUPERUSER_PASSWORD", "changethis"),
+        #             full_name="Admin User"
+        #         )
+        #         created_user = user_service.create_user(db, default_user)
+        #         # Make superuser if needed
+        #         # created_user.is_superuser = True 
+        #         # db.commit()
+        #         logger.info(f"Default admin user {created_user.email} created.")
+        # finally:
+        #     db.close()
 
     except Exception as e:
-        logger.error(f"Error during startup (DB table creation or mock user/prefs): {e}", exc_info=True)
+        logger.error(f"Error during startup (DB table creation): {e}", exc_info=True)
         # Depending on the severity, you might want to prevent startup or handle gracefully.
 
 @app.on_event("shutdown")
@@ -160,11 +152,12 @@ except RuntimeError as e:
 
 # --- API Routers ---
 # Include the router for podcast generation
-app.include_router(podcast_generation.router, prefix="/api/v1/podcasts", tags=["Podcasts"])
-app.include_router(preferences_router.router, prefix="/api/v1/user/preferences", tags=["User Preferences"])
+app.include_router(auth_router.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
+app.include_router(podcast_generation.router, prefix=f"{settings.API_V1_STR}/podcasts", tags=["Podcasts"])
+app.include_router(preferences_router.router, prefix=f"{settings.API_V1_STR}/user/preferences", tags=["User Preferences"])
 
 # --- Root Endpoint --- #
-@app.get("/api/v1/health", tags=["Health"])
+@app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
 async def health_check():
     """Basic health check endpoint."""
     return {"status": "ok", "project": settings.PROJECT_NAME, "version": settings.PROJECT_VERSION}

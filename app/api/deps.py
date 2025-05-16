@@ -7,15 +7,16 @@ from app.models.user_models import User
 # from app.core import security
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
+from jose import jwt, JWTError
 from pydantic import ValidationError
 from app.core.config import settings
-# from app.schemas.token_schemas import TokenPayload # If you have this schema
+from app.schemas import token_schemas # For TokenPayload if used in validation
+from app.services import user_service # To fetch user by email
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login/access-token") # Example if you add token auth
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token" # Adjust if your login path is different
+    tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token" # Adjusted to new auth router path
 )
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -31,54 +32,51 @@ def get_db_session() -> Generator[Session, None, None]:
 # Type alias for DB session dependency
 DbSession = Annotated[Session, Depends(get_db_session)]
 
-# Mock get_current_user for development without full OAuth2 setup
-async def get_current_active_user(
-    db: DbSession, 
-    # token: str = Depends(reusable_oauth2) # Uncomment when real auth is implemented
+async def get_current_user(
+    db: DbSession,
+    token: str = Depends(reusable_oauth2)
 ) -> User:
-    """
-    Mock current user dependency. In a real app, this would validate the token.
-    For development, it fetches a mock user (e.g., ID 1).
-    """
-    # MOCK IMPLEMENTATION: Always return user with ID 1 for now
-    user = db.query(User).filter(User.id == 1).first()
-    if not user:
-        # This might happen if the mock user hasn't been created in on_startup yet
-        # or if the DB is clean. For robust dev, ensure mock user exists.
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Mock User with ID 1 not found. Ensure it is created on startup."
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+        email: str | None = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        # If you were to validate with Pydantic:
+        # token_data = token_schemas.TokenPayload(sub=email) 
+    except JWTError:
+        raise credentials_exception
+    # except ValidationError: # If using Pydantic validation for token_data
+        # raise credentials_exception
+    
+    user = user_service.get_user_by_email(db, email=email)
+    if user is None:
+        raise credentials_exception
     return user
 
-# To use with real OAuth2 token validation (Example structure)
-# async def get_current_active_user_real(
-#     db: DbSession, token: str = Depends(reusable_oauth2)
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    return current_user
+
+# Optional: for superuser-only endpoints
+# async def get_current_active_superuser(
+#     current_user: User = Depends(get_current_active_user),
 # ) -> User:
-#     try:
-#         payload = jwt.decode(
-#             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-#         )
-#         # token_data = TokenPayload(**payload) # Assuming TokenPayload schema
-#         user_id: str = payload.get("sub") 
-#         if user_id is None:
-#             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials (no sub)")
-#     except (jwt.JWTError, ValidationError) as e:
-#         logger.error(f"Token validation error: {e}")
+#     if not current_user.is_superuser:
 #         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Could not validate credentials (error)",
-#             headers={"WWW-Authenticate": "Bearer"},
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="The user doesn't have enough privileges"
 #         )
-    
-#     user = db.query(User).filter(User.id == int(user_id)).first()
-#     if not user:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-#     if not user.is_active:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
-#     return user
+#     return current_user
 
 # --- Placeholder for future authentication dependency ---
 # async def get_current_user(

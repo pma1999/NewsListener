@@ -45,6 +45,11 @@ class Settings:
     LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY", "YOUR_LANGSMITH_API_KEY_HERE")
     LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "NewsListener") # Default project name
 
+    # JWT Settings - IMPORTANT: Change SECRET_KEY in your .env file or environment!
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "YOUR_VERY_SECRET_KEY_THAT_MUST_BE_CHANGED")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
     # CORS settings
     # Allow origins to be a comma-separated string from env, defaulting to a typical local dev setup
     CORS_ALLOWED_ORIGINS_STR: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
