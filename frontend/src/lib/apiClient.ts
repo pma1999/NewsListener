@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore'; // Import the auth store
+import { useAuthStore, SESSION_EXPIRED_MESSAGE } from '../store/authStore'; // Import the auth store and message
 
 // Log the raw environment variable value from Vite
 console.log('[Debug] VITE_API_BASE_URL from import.meta.env:', import.meta.env.VITE_API_BASE_URL);
@@ -31,21 +31,28 @@ apiClient.interceptors.request.use(
   }
 );
 
-// You can add response interceptors here for e.g. handling global 401 errors
-// apiClient.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     const originalRequest = error.config;
-//     if (error.response?.status === 401 && !originalRequest._retry) {
-//       originalRequest._retry = true;
-//       // Here you could try to refresh the token if you have a refresh token mechanism
-//       // For now, we'll just log out or redirect
-//       useAuthStore.getState().logout(); 
-//       // window.location.href = '/login'; // Or use react-router for navigation
-//       return Promise.reject(error);
-//     }
-//     return Promise.reject(error);
-//   }
-// );
+// Add a response interceptor to handle global 401 errors for session expiration
+apiClient.interceptors.response.use(
+  (response) => response, // Simply return response for successful requests
+  async (error) => {
+    const originalRequest = error.config;
+    const store = useAuthStore.getState();
+
+    // Check for 401 Unauthorized
+    if (error.response?.status === 401) {
+      // Exclude auth endpoints like login and register to prevent loops
+      // These paths are relative to the apiClient's baseURL
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login/access-token') || 
+                             originalRequest.url?.includes('/auth/register');
+
+      if (!isAuthEndpoint && store.isAuthenticated) { // Only logout if was authenticated
+        console.warn('Session expired or token invalid. Logging out.');
+        store.logoutAndMarkSessionExpired(); // Uses default message
+        // No need to redirect here; ProtectedRoute will handle it based on store state change.
+      }
+    }
+    return Promise.reject(error); // Important to reject error so it can be caught by the calling function if needed
+  }
+);
 
 export default apiClient; 
