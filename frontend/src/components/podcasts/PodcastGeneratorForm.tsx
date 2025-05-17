@@ -79,7 +79,7 @@ const FormSection: React.FC<FormSectionProps> = ({ title, children, className = 
       {stepNumber && <span className="bg-purple-500 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-2.5 sm:mr-3">{stepNumber}</span>}
       {title}
       {tooltip && (
-        <Tooltip text={tooltip} placement="right" className="max-w-xs ml-1.5 sm:ml-2">
+        <Tooltip text={tooltip} placement="right" className="ml-1.5 sm:ml-2">
           <Info size={18} className="text-gray-400 hover:text-gray-200 cursor-help flex-shrink-0" />
         </Tooltip>
       )}

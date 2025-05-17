@@ -5,6 +5,7 @@ import {
   flip,
   shift,
   arrow,
+  size,
   autoUpdate,
   type Placement,
 } from '@floating-ui/react';
@@ -34,6 +35,14 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children, placement = 'top', cl
       flip(),
       shift({ padding: 8 }),
       arrow({ element: arrowRef }),
+      size({
+        apply({ availableWidth, elements }) {
+          Object.assign(elements.floating.style, {
+            maxWidth: `${availableWidth}px`,
+          });
+        },
+        padding: 8,
+      }),
     ],
     whileElementsMounted: autoUpdate,
   });

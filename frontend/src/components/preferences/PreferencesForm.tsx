@@ -181,7 +181,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences })
       <div className="pt-3 space-y-1">
         <h4 className="text-md font-semibold text-purple-300 flex items-center mb-3">
           Default Content Preferences
-          <Tooltip text={preferencesTooltipText} placement="right" className="max-w-sm">
+          <Tooltip text={preferencesTooltipText} placement="right" className="">
             <Info size={18} className="ml-2 text-gray-400 hover:text-gray-200 cursor-help flex-shrink-0" />
           </Tooltip>
         </h4>
