@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore, SESSION_EXPIRED_MESSAGE } from '../store/authStore'; // Import the auth store and message
+import { useAuthStore } from '../store/authStore'; // Import the auth store
 
 // Log the raw environment variable value from Vite
 console.log('[Debug] VITE_API_BASE_URL from import.meta.env:', import.meta.env.VITE_API_BASE_URL);
