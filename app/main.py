@@ -52,13 +52,6 @@ app.add_middleware(
 def on_startup():
     logger.info("Starting up NewsListener application...")
 
-    # --- BEGIN DEBUG LOGS FOR RAILWAY MOUNT PATH ---
-    logger.info(f"[DEBUG] Current working directory in container: {os.getcwd()}")
-    logger.info(f"[DEBUG] Calculated STATIC_AUDIO_DIR by app: {settings.STATIC_AUDIO_DIR}")
-    # The following line will give you the exact absolute path you need for Railway's Mount Path
-    logger.info(f"[DEBUG] Absolute path for STATIC_AUDIO_DIR (THIS IS YOUR MOUNT PATH): {os.path.abspath(settings.STATIC_AUDIO_DIR)}")
-    # --- END DEBUG LOGS FOR RAILWAY MOUNT PATH ---
-
     # Set LangSmith environment variables for tracing
     # This ensures LangSmith is configured for any LangChain/OpenAI calls
     logger.info("Configuring LangSmith tracing...")
