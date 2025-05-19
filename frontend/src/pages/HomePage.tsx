@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import PodcastGeneratorForm from '../components/podcasts/PodcastGeneratorForm';
 import PodcastStatusSection from '../components/podcasts/PodcastStatusSection';
 import RenamePodcastModal from '../components/podcasts/RenamePodcastModal';
-import { getPodcastStatus, updatePodcastName } from '@/services/podcastService';
-import type { PodcastEpisodeStatusResponse, PodcastEpisodeUpdateNameRequest, PodcastGenerationResponse } from '@/types/api';
+import { updatePodcastName } from '@/services/podcastService';
+import type { PodcastEpisodeStatusResponse, PodcastEpisodeUpdateNameRequest } from '@/types/api';
 
 // Define a new interface for more detailed podcast information
 export interface ActivePodcastInfo {
