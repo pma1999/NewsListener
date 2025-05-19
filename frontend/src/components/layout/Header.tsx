@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Mic, Settings, Radio, LogIn, LogOut, UserCircle } from 'lucide-react'; // Icons
+import { Mic, Settings, Radio, LogIn, LogOut, UserCircle, ListMusic } from 'lucide-react'; // Icons
 import { useAuthStore } from '../../store/authStore'; // Added useAuthStore
 
 const Header: React.FC = () => {
@@ -44,6 +44,14 @@ const Header: React.FC = () => {
           >
             <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline ml-1.5 sm:ml-2">Preferences</span>
+          </NavLink>
+          <NavLink 
+            to="/my-podcasts" 
+            className={({ isActive }) => navLinkClass(isActive)}
+            title="My Podcasts"
+          >
+            <ListMusic className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline ml-1.5 sm:ml-2">My Podcasts</span>
           </NavLink>
           
           {/* Auth Status Indicator */}

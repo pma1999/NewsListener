@@ -61,6 +61,9 @@ class Settings:
     # CORS settings (example)
     # CORS_ORIGINS: list[str] = ["http://localhost:3000"] # For a React frontend, for example
 
+    # Podcast Settings
+    PODCAST_RETENTION_DAYS: int = int(os.getenv("PODCAST_RETENTION_DAYS", 30)) # Days
+
 settings = Settings()
 
 # For logging

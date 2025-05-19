@@ -1,12 +1,14 @@
 import React from 'react';
 import PodcastStatusCard from './PodcastStatusCard';
 import type { ActivePodcastInfo } from '../../pages/HomePage';
+import type { PodcastEpisodeStatusResponse } from '../../types/api';
 
 interface PodcastStatusSectionProps {
   activePodcasts: ActivePodcastInfo[];
+  onPodcastCompleted?: (statusResponse: PodcastEpisodeStatusResponse, isCachedOnStart: boolean) => void;
 }
 
-const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activePodcasts }) => {
+const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activePodcasts, onPodcastCompleted }) => {
   if (activePodcasts.length === 0) {
     return (
       <div className="mt-8 sm:mt-10 p-4 sm:p-6 bg-gray-800 rounded-xl shadow-xl">
@@ -31,6 +33,7 @@ const PodcastStatusSection: React.FC<PodcastStatusSectionProps> = ({ activePodca
             initialStatus={podcast.initialStatus}
             initialMessage={podcast.initialMessage}
             isCached={podcast.isCached}
+            onPodcastCompleted={onPodcastCompleted}
           />
         ))}
       </div>

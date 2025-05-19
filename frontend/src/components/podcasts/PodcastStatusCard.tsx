@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getPodcastStatus } from '../../services/podcastService';
 import type { PodcastEpisodeStatusResponse } from '../../types/api';
@@ -12,6 +12,7 @@ interface PodcastStatusCardProps {
   initialStatus?: string;    // New prop
   initialMessage?: string;   // Added new prop
   isCached?: boolean;        // New prop
+  onPodcastCompleted?: (statusResponse: PodcastEpisodeStatusResponse, isCachedOnStart: boolean) => void; // Modified prop
 }
 
 const POLLING_INTERVAL_MS = 5000; // 5 seconds
@@ -20,7 +21,8 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
   newsDigestId, 
   initialStatus,
   initialMessage, // Destructure new prop
-  isCached 
+  isCached, 
+  onPodcastCompleted // Destructure new prop
 }) => {
   const { // Note: data is renamed to statusDataFromHook to avoid conflict with statusData used below
     data: statusDataFromHook,
@@ -63,6 +65,16 @@ const PodcastStatusCard: React.FC<PodcastStatusCardProps> = ({
     },
     refetchOnWindowFocus: true,
   });
+
+  // Effect to call onPodcastCompleted when status is final
+  useEffect(() => {
+    if (statusDataFromHook && onPodcastCompleted) {
+      if (statusDataFromHook.status === NewsDigestStatus.FAILED || 
+          (statusDataFromHook.status === NewsDigestStatus.COMPLETED && statusDataFromHook.audio_url)) {
+        onPodcastCompleted(statusDataFromHook, isCached || false); // Pass isCached prop
+      }
+    }
+  }, [statusDataFromHook, onPodcastCompleted, isCached]); // Added isCached to dependency array
 
   // Decide whether to use hook data or initial prop data for the first render of cached items
   const statusData = isCached && initialStatus && !statusDataFromHook 

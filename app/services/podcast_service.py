@@ -5,7 +5,7 @@ import uuid
 import tempfile
 import shutil # For robust temp file removal if needed, though os.remove is usually fine.
 from typing import Optional, List, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -275,14 +275,16 @@ async def generate_podcast_audio_for_digest(
                 episode.file_path = permanent_audio_disk_path
                 episode.language = language
                 episode.audio_style = audio_style
-                episode.created_at = datetime.utcnow() # Update timestamp
+                episode.updated_at = datetime.utcnow() # Explicitly set updated_at for existing records
+                episode.expires_at = datetime.utcnow() + timedelta(days=settings.PODCAST_RETENTION_DAYS)
             else:
                 episode = PodcastEpisode(
                     news_digest_id=news_digest_id,
                     audio_url=final_audio_url,
                     file_path=permanent_audio_disk_path,
                     language=language,
-                    audio_style=audio_style
+                    audio_style=audio_style,
+                    expires_at=datetime.utcnow() + timedelta(days=settings.PODCAST_RETENTION_DAYS)
                 )
                 db.add(episode)
             

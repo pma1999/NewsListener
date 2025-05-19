@@ -1,6 +1,7 @@
 from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Optional, Dict, Any
 from app.models.news_models import NewsDigestStatus # For status enum
+from datetime import datetime # Added for default factory
 
 class PodcastGenerationRequest(BaseModel):
     predefined_category_id: Optional[int] = Field(None, title="Predefined Category ID", description="ID of a predefined category to use as a base. If provided, 'use_user_default_preferences' is ignored for sourcing base criteria, and specific request_* fields act as overrides to the category's settings.")
@@ -28,15 +29,26 @@ class PodcastGenerationResponse(BaseModel):
     news_digest_id: int
     initial_status: str
     message: str
+    podcast_episode_id: Optional[int] = None # Include episode ID if created synchronously or for immediate naming
 
 class PodcastEpisodeStatusResponse(BaseModel):
     news_digest_id: int
-    status: str
-    audio_url: Optional[str] = None
+    status: str # From NewsDigest
+    audio_url: Optional[str] = None # Reverted to str
     script_preview: Optional[str] = None # First few lines of the script
-    error_message: Optional[str] = None
-    created_at: str # Should be datetime, but often str in responses
-    updated_at: str # Should be datetime, but often str in responses
+    error_message: Optional[str] = None # From NewsDigest
+    created_at: datetime # NewsDigest created_at
+    updated_at: datetime # NewsDigest updated_at
+
+    # PodcastEpisode specific fields
+    podcast_episode_id: Optional[int] = None
+    user_given_name: Optional[str] = None
+    episode_language: Optional[str] = None # To distinguish from request language if needed
+    episode_audio_style: Optional[str] = None # To distinguish from request style if needed
+    episode_created_at: Optional[datetime] = None # PodcastEpisode created_at
+    episode_updated_at: Optional[datetime] = None # PodcastEpisode updated_at
+    episode_expires_at: Optional[datetime] = None # PodcastEpisode expires_at
+
 
 class NewsDigestBase(BaseModel):
     original_articles_info: Optional[Dict[str, Any]] = None
@@ -52,29 +64,58 @@ class NewsDigestUpdate(BaseModel):
 class NewsDigestInDB(NewsDigestBase):
     id: int
     user_id: int
-    created_at: str # Consistent with PodcastEpisodeStatusResponse
-    updated_at: str # Consistent with PodcastEpisodeStatusResponse
+    created_at: datetime
+    updated_at: datetime
     generated_script_text: Optional[str] = None
     status: str
     error_message: Optional[str] = None
 
     class Config:
-        from_attributes = True # Pydantic V2
+        from_attributes = True
 
 class PodcastEpisodeBase(BaseModel):
     language: str
     audio_style: Optional[str] = None
+    user_given_name: Optional[str] = Field(None, max_length=255)
 
 class PodcastEpisodeCreate(PodcastEpisodeBase):
     news_digest_id: int
+    # expires_at will be set by service
 
 class PodcastEpisodeInDB(PodcastEpisodeBase):
     id: int
     news_digest_id: int
-    audio_url: Optional[str] = None
+    audio_url: Optional[str] = None # Reverted to str
     file_path: Optional[str] = None
     duration_seconds: Optional[int] = None
-    created_at: str # Consistent
+    created_at: datetime
+    updated_at: datetime
+    expires_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True # Pydantic V2 
+        from_attributes = True
+
+# --- New Schemas for User Podcast Listing and Renaming ---
+class PodcastEpisodeUpdateNameRequest(BaseModel):
+    user_given_name: str = Field(..., min_length=1, max_length=255, description="The new user-defined name for the podcast episode.")
+
+class UserPodcastListItem(BaseModel):
+    news_digest_id: int
+    podcast_episode_id: int
+    user_given_name: Optional[str] = None
+    audio_url: Optional[str] = None # Reverted to str
+    original_request_summary: Optional[str] = Field(None, description="A brief summary of the original podcast generation request criteria.")
+    status: str # NewsDigest status
+    digest_created_at: datetime
+    episode_created_at: datetime
+    episode_expires_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class UserPodcastsListResponse(BaseModel):
+    podcasts: List[UserPodcastListItem]
+    total: int
+    page: int
+    size: int
+    # total_pages: int # Helper, can be calculated total / size 

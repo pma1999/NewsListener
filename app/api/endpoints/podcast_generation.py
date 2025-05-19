@@ -1,8 +1,9 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import cast, TEXT
-from typing import Any, Optional, Dict
+from sqlalchemy import cast, TEXT, desc, func as sql_func
+from typing import Any, Optional, Dict, List
+from datetime import datetime, timedelta
 
 from app.api import deps
 from app.schemas import podcast_schemas
@@ -11,10 +12,55 @@ from app.models.news_models import NewsDigest, NewsDigestStatus, PodcastEpisode
 from app.models.user_models import User
 from app.models.preference_models import UserPreference
 from app.models.predefined_category_models import PredefinedCategory as PredefinedCategoryModel
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Helper function to generate request summary
+def _generate_request_summary(original_info: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not original_info:
+        return "General request"
+    
+    source_type = original_info.get("source_type")
+    summary_parts = []
+
+    if source_type == "specific_urls":
+        urls = original_info.get("urls", [])
+        summary_parts.append(f"From URLs: {len(urls)} specified ({', '.join(urls[:2])}{'...' if len(urls) > 2 else ''})")
+    elif source_type == "predefined_category_resolved":
+        category_id = original_info.get("predefined_category_id")
+        # Potentially store category_name in original_info in the future for better summary
+        summary_parts.append(f"From Predefined Category ID: {category_id}")
+    elif source_type == "user_preferences":
+        pref_id = original_info.get("user_preference_id")
+        applied = original_info.get("applied_criteria", {})
+        if not pref_id:
+            summary_parts.append("Based on ad-hoc input (no stored preferences found)")
+        else:
+            summary_parts.append(f"Based on User Preferences (ID: {pref_id})")
+        
+        topics = applied.get("topics")
+        keywords = applied.get("keywords")
+        if topics: summary_parts.append(f"Topics: {', '.join(topics[:3])}{'...' if len(topics) > 3 else ''}")
+        if keywords: summary_parts.append(f"Keywords: {', '.join(keywords[:3])}{'...' if len(keywords) > 3 else ''}")
+
+    elif source_type == "direct_input":
+        summary_parts.append("Ad-hoc request.")
+        topics = original_info.get("topics")
+        keywords = original_info.get("keywords")
+        if topics: summary_parts.append(f"Topics: {', '.join(topics[:3])}{'...' if len(topics) > 3 else ''}")
+        if keywords: summary_parts.append(f"Keywords: {', '.join(keywords[:3])}{'...' if len(keywords) > 3 else ''}")
+    else:
+        summary_parts.append("Criteria based request.")
+
+    language = original_info.get("language")
+    audio_style = original_info.get("audio_style")
+    if language: summary_parts.append(f"Lang: {language}")
+    if audio_style: summary_parts.append(f"Style: {audio_style}")
+    
+    return ", ".join(filter(None, summary_parts)) if summary_parts else "General podcast criteria"
 
 # --- Background Task for Full Podcast Generation --- #
 async def background_generate_full_podcast(
@@ -110,10 +156,10 @@ async def generate_podcast_endpoint(
     source_info_for_digest: Dict[str, Any] = {}
 
     # Mode 1: Specific Article URLs (Highest Priority)
-    if request.specific_article_urls and request.specific_article_urls[0].strip() != "": # Check if not just empty strings
+    if request.specific_article_urls and str(request.specific_article_urls[0]).strip() != "": # Check if not just empty strings
         logger.info(f"User {current_user.id}: Using 'Specific Article URLs' mode.")
         generation_criteria["source_type"] = "specific_urls"
-        generation_criteria["urls"] = [str(url) for url in request.specific_article_urls if str(url).strip()]
+        generation_criteria["urls"] = [str(url) for url in request.specific_article_urls if str(url).strip()] # Ensure all URLs are stripped and non-empty
         
         if not generation_criteria["urls"]:
              raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Specific article URLs provided but all were empty.")
@@ -309,6 +355,13 @@ async def generate_podcast_endpoint(
     db.refresh(news_digest)
     logger.info(f"Created NewsDigest record ID: {news_digest.id} for user {current_user.id}")
 
+    # Try to get podcast_episode_id if it was created synchronously (not typical with background tasks)
+    # However, the PodcastEpisode is typically created *within* the background task.
+    # So, this might be None here.
+    podcast_episode_id: Optional[int] = None
+    if news_digest.podcast_episode:
+        podcast_episode_id = news_digest.podcast_episode.id
+
     background_tasks.add_task(
         background_generate_full_podcast,
         db=db,
@@ -323,7 +376,8 @@ async def generate_podcast_endpoint(
     return podcast_schemas.PodcastGenerationResponse(
         news_digest_id=news_digest.id,
         initial_status=str(news_digest.status), # status is already a string
-        message="Podcast generation process started." # Updated message for clarity
+        message="Podcast generation process started.", # Updated message for clarity
+        podcast_episode_id=podcast_episode_id # May be None
     )
 
 @router.get("/podcast-status/{news_digest_id}", response_model=podcast_schemas.PodcastEpisodeStatusResponse)
@@ -341,23 +395,135 @@ async def get_podcast_status_endpoint(
     if news_digest.user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this digest status")
 
+    # Initialize PodcastEpisode specific fields to None
+    podcast_episode_id: Optional[int] = None
+    user_given_name: Optional[str] = None
+    episode_language: Optional[str] = None
+    episode_audio_style: Optional[str] = None
+    episode_created_at_iso: Optional[str] = None
+    episode_updated_at_iso: Optional[str] = None
+    episode_expires_at_iso: Optional[str] = None
     audio_url: Optional[str] = None
-    script_preview: Optional[str] = None
 
     if news_digest.podcast_episode:
-        audio_url = news_digest.podcast_episode.audio_url
+        episode = news_digest.podcast_episode
+        podcast_episode_id = episode.id
+        user_given_name = episode.user_given_name
+        episode_language = episode.language
+        episode_audio_style = episode.audio_style
+        audio_url = episode.audio_url # Keep this for direct audio_url access
+        if episode.created_at: episode_created_at_iso = episode.created_at.isoformat()
+        if episode.updated_at: episode_updated_at_iso = episode.updated_at.isoformat()
+        if episode.expires_at: episode_expires_at_iso = episode.expires_at.isoformat()
     
+    script_preview: Optional[str] = None
     if news_digest.generated_script_text:
-        # Truncate script preview if it's very long
         preview_limit = 250 
         script_preview = (news_digest.generated_script_text[:preview_limit] + "...") if len(news_digest.generated_script_text) > preview_limit else news_digest.generated_script_text
 
     return podcast_schemas.PodcastEpisodeStatusResponse(
         news_digest_id=news_digest.id,
-        status=str(news_digest.status), # status is already a string
-        audio_url=audio_url,
+        status=str(news_digest.status),
+        audio_url=audio_url, # This is the direct audio_url from podcast_episode
         script_preview=script_preview,
         error_message=news_digest.error_message,
         created_at=news_digest.created_at.isoformat(),
         updated_at=news_digest.updated_at.isoformat(),
-    ) 
+        
+        podcast_episode_id=podcast_episode_id,
+        user_given_name=user_given_name,
+        episode_language=episode_language,
+        episode_audio_style=episode_audio_style,
+        episode_created_at=episode_created_at_iso,
+        episode_updated_at=episode_updated_at_iso,
+        episode_expires_at=episode_expires_at_iso,
+    )
+
+@router.get("/my-podcasts", response_model=podcast_schemas.UserPodcastsListResponse)
+async def list_my_podcasts(
+    db: Session = Depends(deps.get_db_session),
+    current_user: User = Depends(deps.get_current_active_user),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Page size")
+) -> Any:
+    """
+    Retrieve a paginated list of the current user's completed podcasts.
+    Only podcasts with generated audio and not yet expired (or all if not strictly filtering expired) are returned.
+    """
+    logger.info(f"User {current_user.id} fetching their podcasts, page={page}, size={size}")
+
+    offset = (page - 1) * size
+
+    # Query for NewsDigests with associated completed PodcastEpisodes for the current user
+    query_base = db.query(NewsDigest, PodcastEpisode) \
+        .join(PodcastEpisode, NewsDigest.id == PodcastEpisode.news_digest_id) \
+        .filter(NewsDigest.user_id == current_user.id) \
+        .filter(NewsDigest.status == NewsDigestStatus.COMPLETED) \
+        .filter(PodcastEpisode.audio_url.isnot(None))
+        # Optionally, filter out expired podcasts strictly at DB level:
+        # .filter(PodcastEpisode.expires_at > datetime.utcnow())
+
+    total_count = query_base.count()
+
+    results = query_base.order_by(desc(NewsDigest.created_at)) \
+                      .limit(size) \
+                      .offset(offset) \
+                      .all()
+
+    user_podcasts: List[podcast_schemas.UserPodcastListItem] = []
+    for news_digest, podcast_episode in results:
+        # Filter for display if not done in DB query, or just pass through if already filtered
+        if podcast_episode.expires_at and podcast_episode.expires_at < datetime.utcnow():
+            # Simple skip for this example, could be handled in query too for efficiency
+            # total_count would need adjustment if filtering here and not in query_base.count()
+            pass # Or continue, if strict filtering is desired and not in main query
+
+        user_podcasts.append(
+            podcast_schemas.UserPodcastListItem(
+                news_digest_id=news_digest.id,
+                podcast_episode_id=podcast_episode.id,
+                user_given_name=podcast_episode.user_given_name,
+                audio_url=podcast_episode.audio_url,
+                original_request_summary=_generate_request_summary(news_digest.original_articles_info),
+                status=str(news_digest.status),
+                digest_created_at=news_digest.created_at.isoformat(),
+                episode_created_at=podcast_episode.created_at.isoformat(),
+                episode_expires_at=podcast_episode.expires_at.isoformat() if podcast_episode.expires_at else None,
+            )
+        )
+    
+    return podcast_schemas.UserPodcastsListResponse(
+        podcasts=user_podcasts,
+        total=total_count, # This count is before Python-side expiration filtering, adjust if needed
+        page=page,
+        size=size
+    )
+
+@router.put("/episodes/{podcast_episode_id}/name", response_model=podcast_schemas.PodcastEpisodeInDB)
+async def update_podcast_episode_name(
+    podcast_episode_id: int,
+    request: podcast_schemas.PodcastEpisodeUpdateNameRequest,
+    db: Session = Depends(deps.get_db_session),
+    current_user: User = Depends(deps.get_current_active_user)
+) -> Any:
+    """
+    Update the user-given name of a specific podcast episode.
+    """
+    logger.info(f"User {current_user.id} attempting to rename podcast episode {podcast_episode_id} to '{request.user_given_name}'")
+
+    episode = db.query(PodcastEpisode).filter(PodcastEpisode.id == podcast_episode_id).first()
+
+    if not episode:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Podcast episode not found")
+
+    # Verify ownership: Check if the related NewsDigest belongs to the current user
+    news_digest = db.query(NewsDigest).filter(NewsDigest.id == episode.news_digest_id).first()
+    if not news_digest or (news_digest.user_id != current_user.id and not current_user.is_superuser):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this podcast episode")
+
+    episode.user_given_name = request.user_given_name
+    episode.updated_at = datetime.utcnow() # Manually trigger update for updated_at timestamp
+    db.commit()
+    db.refresh(episode)
+
+    return episode 

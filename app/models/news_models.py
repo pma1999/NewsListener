@@ -45,13 +45,16 @@ class PodcastEpisode(Base):
     # Absolute file path on the server for management (e.g., deletion)
     file_path = Column(String, nullable=True)
 
+    user_given_name = Column(String(255), nullable=True) # User-defined name for the podcast
     language = Column(String(10), nullable=False, index=True)
     audio_style = Column(String(50), nullable=True, index=True)
     duration_seconds = Column(Integer, nullable=True) # Optional: store audio duration
 
     created_at = Column(DateTime, default=func.now(), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False, server_default=func.now())
+    expires_at = Column(DateTime, nullable=True, index=True) # When the podcast episode (and file) should be considered for cleanup
 
     news_digest = relationship("NewsDigest", back_populates="podcast_episode")
 
     def __repr__(self):
-        return f"<PodcastEpisode(id={self.id}, news_digest_id={self.news_digest_id}, audio_url='{self.audio_url}')>" 
+        return f"<PodcastEpisode(id={self.id}, news_digest_id={self.news_digest_id}, name='{self.user_given_name}', audio_url='{self.audio_url}')>" 

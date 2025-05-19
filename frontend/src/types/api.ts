@@ -64,6 +64,7 @@ export interface PodcastGenerationResponse {
   news_digest_id: number;
   initial_status: string;
   message: string;
+  podcast_episode_id?: number | null;
 }
 
 export enum NewsDigestStatus {
@@ -80,8 +81,55 @@ export interface PodcastEpisodeStatusResponse {
   audio_url?: string | null;
   script_preview?: string | null;
   error_message?: string | null;
-  created_at: string; // ISO datetime string
-  updated_at: string; // ISO datetime string
+  created_at: string;
+  updated_at: string;
+
+  podcast_episode_id?: number | null;
+  user_given_name?: string | null;
+  episode_language?: string | null;
+  episode_audio_style?: string | null;
+  episode_created_at?: string | null;
+  episode_updated_at?: string | null;
+  episode_expires_at?: string | null;
+}
+
+// --- New Types for User Podcast Listing and Renaming ---
+export interface PodcastEpisodeUpdateNameRequest {
+  user_given_name: string;
+}
+
+// Mirroring PodcastEpisodeInDB from backend, can be used for detailed view or update response
+export interface PodcastEpisodeDetail {
+  id: number;
+  news_digest_id: number;
+  language: string;
+  audio_style?: string | null;
+  user_given_name?: string | null;
+  audio_url?: string | null;
+  file_path?: string | null; // Usually not needed by frontend
+  duration_seconds?: number | null;
+  created_at: string;
+  updated_at: string;
+  expires_at?: string | null;
+}
+
+export interface UserPodcastListItem {
+  news_digest_id: number;
+  podcast_episode_id: number;
+  user_given_name?: string | null;
+  audio_url?: string | null;
+  original_request_summary?: string | null;
+  status: NewsDigestStatus;
+  digest_created_at: string;
+  episode_created_at: string;
+  episode_expires_at?: string | null;
+}
+
+export interface UserPodcastsListResponse {
+  podcasts: UserPodcastListItem[];
+  total: number;
+  page: number;
+  size: number;
 }
 
 // Add other necessary types as identified, e.g., for User if auth is expanded. 
