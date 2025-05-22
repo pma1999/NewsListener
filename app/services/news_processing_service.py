@@ -4,6 +4,7 @@ import feedparser # New import
 import requests # New import
 from bs4 import BeautifulSoup # New import
 import asyncio # For running async http requests if needed, or just for consistency with async def
+import random # Added for shuffling
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class NewsProcessingService:
 
         all_processed_news_items_text = []
         source_type = criteria.get("source_type")
-        MAX_ARTICLES_TO_PROCESS = 15 # Limit number of articles to prevent very long outputs / processing times
+        MAX_ARTICLES_TO_PROCESS = 30 # Limit number of articles to prevent very long outputs / processing times
         processed_article_count = 0
 
         if source_type == "specific_urls":
@@ -153,6 +154,10 @@ class NewsProcessingService:
 
             logger.info(f"Collected {len(raw_feed_items)} items from all RSS feeds after handling errors.")
             
+            # Shuffle the collected items to give all feeds a more equal chance
+            random.shuffle(raw_feed_items)
+            logger.info(f"Shuffled {len(raw_feed_items)} items before selection.")
+
             selected_articles_content = []
             urls_processed_for_content = set()
 
