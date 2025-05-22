@@ -184,9 +184,9 @@ const HomePage: React.FC = () => {
     podcastGenerationMutation.mutate(payload);
   };
 
-  const handleFilterChange = (updatedFilteredProfiles: PredefinedCategory[]) => {
+  const handleFilterChange = useCallback((updatedFilteredProfiles: PredefinedCategory[]) => {
     setFilteredProfiles(updatedFilteredProfiles);
-  };
+  }, []);
 
   // Loading state for initial data (profiles and user preferences for defaults)
   if (isLoadingCategories || (isLoadingUserPreferences && !userPreferencesData)) { // Wait for user prefs only if not already loaded

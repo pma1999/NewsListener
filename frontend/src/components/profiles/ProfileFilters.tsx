@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { PredefinedCategory } from '@/types/api';
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface ProfileFiltersProps {
   allProfiles: PredefinedCategory[];

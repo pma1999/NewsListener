@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PredefinedCategory } from '@/types/api';
-import { Globe, Building, Cpu, Lightbulb, BarChart, Palette, Mic, Tag, MapPin, Film } from 'lucide-react'; // Example icons
+import { Globe, Building, Cpu, Lightbulb, BarChart, Palette, Mic, Tag, MapPin, Film, Newspaper } from 'lucide-react'; // Added Newspaper icon
 import { Button } from '@/components/common/Button';
 
 interface ProfileCardProps {
@@ -20,6 +20,7 @@ const getProfileIcon = (profile: PredefinedCategory): React.ReactNode => {
       case 'sports': return <BarChart size={28} className="text-orange-400" />;
       case 'arts': case 'culture': return <Palette size={28} className="text-pink-400" />;
       case 'film': return <Film size={28} className="text-red-400" />;
+      case 'newspaper': case 'news': return <Newspaper size={28} className="text-teal-400" />; // Added Newspaper case
       default: return <Mic size={28} className="text-gray-400" />;
     }
   }
