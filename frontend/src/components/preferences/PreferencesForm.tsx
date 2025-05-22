@@ -7,30 +7,11 @@ import { Input } from '../common/Input.js';
 import { Select } from '../common/Select.js';
 import Tooltip from '../common/Tooltip';
 import { Check, AlertCircle, Save, PlusCircle, XCircle, Loader2, Info } from 'lucide-react';
+import { languageOptions, audioStyleOptions } from '../../config/options'; // Import from shared location
 
 interface PreferencesFormProps {
   initialPreferences: UserPreference;
 }
-
-const languageOptions = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-  // Add more supported languages from backend if necessary
-];
-
-const audioStyleOptions = [
-  { value: 'standard', label: 'Standard News Anchor' },
-  { value: 'engaging_storyteller', label: 'Engaging Storyteller' },
-  { value: 'quick_brief', label: 'Quick Brief' },
-  { value: 'investigative_deep_dive', label: 'Investigative Deep Dive' },
-  { value: 'calm_neutral_reporter', label: 'Calm Neutral Reporter' },
-  { value: 'professional_narrator', label: 'Professional Narrator' },
-  { value: 'enthusiastic_reporter', label: 'Enthusiastic Reporter' },
-  { value: 'news_anchor', label: 'Classic News Anchor' },
-  { value: 'documentary_style', label: 'Documentary Style' },
-  // Add more supported styles from backend
-];
 
 const PreferencesForm: React.FC<PreferencesFormProps> = ({ initialPreferences }) => {
   const queryClient = useQueryClient();

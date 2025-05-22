@@ -13,25 +13,26 @@ import {
   Link as LinkIcon, ListChecks, UserCog, FilePlus2, ChevronDown, ChevronUp // Added new icons
 } from 'lucide-react';
 import { fetchUserPreferences } from '../../services/preferenceService';
+import { languageOptions, audioStyleOptions } from '../../config/options'; // Import from shared location
 
 // Define language and audio style options (can be moved to a shared config if used elsewhere)
-const languageOptions = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-];
+// const languageOptions = [
+//   { value: 'en', label: 'English' },
+//   { value: 'es', label: 'Español' },
+//   { value: 'fr', label: 'Français' },
+// ];
 
-const audioStyleOptions = [
-  { value: 'standard', label: 'Standard News Anchor' },
-  { value: 'engaging_storyteller', label: 'Engaging Storyteller' },
-  { value: 'quick_brief', label: 'Quick Brief' },
-  { value: 'investigative_deep_dive', label: 'Investigative Deep Dive' },
-  { value: 'calm_neutral_reporter', label: 'Calm Neutral Reporter' },
-  { value: 'professional_narrator', label: 'Professional Narrator' },
-  { value: 'enthusiastic_reporter', label: 'Enthusiastic Reporter' },
-  { value: 'news_anchor', label: 'Classic News Anchor' },
-  { value: 'documentary_style', label: 'Documentary Style' },
-];
+// const audioStyleOptions = [
+//   { value: 'standard', label: 'Standard News Anchor' },
+//   { value: 'engaging_storyteller', label: 'Engaging Storyteller' },
+//   { value: 'quick_brief', label: 'Quick Brief' },
+//   { value: 'investigative_deep_dive', label: 'Investigative Deep Dive' },
+//   { value: 'calm_neutral_reporter', label: 'Calm Neutral Reporter' },
+//   { value: 'professional_narrator', label: 'Professional Narrator' },
+//   { value: 'enthusiastic_reporter', label: 'Enthusiastic Reporter' },
+//   { value: 'news_anchor', label: 'Classic News Anchor' },
+//   { value: 'documentary_style', label: 'Documentary Style' },
+// ];
 
 // --- Sub-components ---
 

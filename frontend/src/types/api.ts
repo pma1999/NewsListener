@@ -6,6 +6,9 @@ export interface PredefinedCategory {
   id: number;
   name: string;
   description?: string | null;
+  theme?: string | null;
+  region?: string | null;
+  icon_identifier?: string | null;
   rss_urls?: string[] | null; // Pydantic HttpUrl becomes string for frontend
   topics?: string[] | null;
   keywords?: string[] | null;

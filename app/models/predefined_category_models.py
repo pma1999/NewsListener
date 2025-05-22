@@ -9,6 +9,11 @@ class PredefinedCategory(Base):
     name = Column(String, index=True, nullable=False, unique=True)
     description = Column(String, nullable=True)
     
+    # New fields for better UX and filtering
+    theme = Column(String, nullable=True, index=True) # e.g., "Technology", "World News", "Sports"
+    region = Column(String, nullable=True, index=True) # e.g., "Global", "UK", "Spain"
+    icon_identifier = Column(String, nullable=True) # e.g., "tech_icon", "world_icon", or a reference
+
     rss_urls = Column(JSON, nullable=True) # Stores List[str]
     topics = Column(JSON, nullable=True) # Stores List[str]
     keywords = Column(JSON, nullable=True) # Stores List[str]

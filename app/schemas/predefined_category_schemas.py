@@ -5,6 +5,9 @@ from datetime import datetime # For timestamp fields if we include them in respo
 class PredefinedCategoryBase(BaseModel):
     name: str
     description: Optional[str] = None
+    theme: Optional[str] = None
+    region: Optional[str] = None
+    icon_identifier: Optional[str] = None
     rss_urls: Optional[List[HttpUrl]] = [] 
     topics: Optional[List[str]] = []
     keywords: Optional[List[str]] = []
@@ -21,6 +24,7 @@ class PredefinedCategory(PredefinedCategoryBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None # Can be null if never updated
+    # theme, region, icon_identifier are inherited from PredefinedCategoryBase
 
     class Config:
         from_attributes = True
@@ -28,6 +32,9 @@ class PredefinedCategory(PredefinedCategoryBase):
 class PredefinedCategoryUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    theme: Optional[str] = None
+    region: Optional[str] = None
+    icon_identifier: Optional[str] = None
     rss_urls: Optional[List[HttpUrl]] = None
     topics: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
