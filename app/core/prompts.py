@@ -120,7 +120,7 @@ Tts_intonation_news_standard = "varied intonation to emphasize key points and ma
 # Language-specific accent preferences for news (can be expanded)
 Tts_accent_map_news = {
     "en": "standard North American English accent, clear and neutral",
-    "es": "standard Peninsular Spanish accent (Castilian Spanish)",
+    "es": "Use ONLY a standard Peninsular Spanish accent (Español de España, Castilian Spanish from Spain). It is critical to use the Castilian Spanish accent from Spain, not a Latin American Spanish accent.",
     "fr": "standard Metropolitan French accent, clear and professional",
     # Add other languages and desired accents
 }
