@@ -139,7 +139,7 @@ async def generate_news_podcast_script(
     llm = await get_llm_instance(user_google_api_key=user_google_api_key) # Pass key to get_llm_instance
     parser = StrOutputParser()
 
-    MAX_CONTEXT_CHARS = 100000 # Gemini has a larger context window generally
+    MAX_CONTEXT_CHARS = 300000 # Gemini has a larger context window generally
     if len(news_items_content) > MAX_CONTEXT_CHARS:
         logger.warning(f"News content length ({len(news_items_content)}) exceeds limit ({MAX_CONTEXT_CHARS}). Truncating.")
         news_items_content = news_items_content[:MAX_CONTEXT_CHARS] + "... (content truncated)"
